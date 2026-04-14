@@ -328,6 +328,24 @@ export default function AdvertiserPage({ user }) {
                 </div>
               )}
 
+              {/* Image URL (manual fallback) */}
+              <div className="adv-form-group">
+                <label className="adv-form-label">🖼 Картинка (URL)</label>
+                <input
+                  className="input"
+                  placeholder="https://... (автоматически или вставьте вручную)"
+                  value={form.image_url || ''}
+                  onChange={e => setForm(f => ({ ...f, image_url: e.target.value || null }))}
+                />
+                {form.image_url && (
+                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <img src={form.image_url} alt="" style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover' }}
+                      onError={e => { e.target.style.display = 'none'; }} />
+                    <span style={{ fontSize: 12, color: 'var(--success)' }}>✅ Превью</span>
+                  </div>
+                )}
+              </div>
+
               {/* Title (auto-filled or manual) */}
               <div className="adv-form-group">
                 <label className="adv-form-label">Название задания</label>
