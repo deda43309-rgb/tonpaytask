@@ -25,21 +25,28 @@ router.get('/', async (req, res) => {
     `, userId);
 
     // Advertiser tasks (active, not own, not completed, not maxed out)
-    const adTasks = await db.all(`
-      SELECT at2.id, at2.type, at2.title, at2.description, at2.reward, 
-        at2.url as target_url, at2.url as target_id,
-        '📢' as icon, 999 as sort_order, 1 as is_active,
-        at2.max_completions, at2.current_completions, at2.created_at,
-        at2.image_url,
-        CASE WHEN atc.id IS NOT NULL THEN 1 ELSE 0 END as is_completed,
-        1 as is_ad, at2.advertiser_id
-      FROM ad_tasks at2
-      LEFT JOIN ad_task_completions atc ON atc.task_id = at2.id AND atc.user_id = CAST(? AS BIGINT)
-      WHERE at2.status = 'active' 
-        AND at2.advertiser_id != CAST(? AS BIGINT)
-        AND at2.current_completions < at2.max_completions
-      ORDER BY at2.created_at DESC
-    `, userId, userId);
+    let adTasks = [];
+    try {
+      adTasks = await db.all(`
+        SELECT at2.id, at2.type, at2.title, at2.description, at2.reward, 
+          at2.url as target_url, at2.url as target_id,
+          '📢' as icon, 999 as sort_order, 1 as is_active,
+          at2.max_completions, at2.current_completions, at2.created_at,
+          at2.image_url,
+          CASE WHEN atc.id IS NOT NULL THEN 1 ELSE 0 END as is_completed,
+          1 as is_ad, at2.advertiser_id
+        FROM ad_tasks at2
+        LEFT JOIN ad_task_completions atc ON atc.task_id = at2.id AND atc.user_id = ?
+        WHERE at2.status = 'active' 
+          AND at2.advertiser_id != ?
+          AND at2.current_completions < at2.max_completions
+        ORDER BY at2.created_at DESC
+      `, userId, userId);
+    } catch (adErr) {
+      console.error('Ad tasks query error:', adErr);
+    }
+
+    console.log(`Tasks for user ${userId}: ${tasks.length} regular, ${adTasks.length} ad`);
 
     res.json({ tasks: [...tasks, ...adTasks] });
   } catch (error) {

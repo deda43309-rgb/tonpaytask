@@ -33,6 +33,7 @@ export default function AdminPage({ user }) {
     icon: '🔔',
     sort_order: 0,
     max_completions: 0,
+    image_url: null,
   });
 
   // Auto-resolve Telegram URL
@@ -139,6 +140,7 @@ export default function AdminPage({ user }) {
       icon: task.icon || '📋',
       sort_order: task.sort_order || 0,
       max_completions: task.max_completions || 0,
+      image_url: task.image_url || null,
     });
     setShowTaskForm(true);
     hapticFeedback('light');
@@ -177,6 +179,7 @@ export default function AdminPage({ user }) {
       icon: '🔔',
       sort_order: 0,
       max_completions: 0,
+      image_url: null,
     });
     setResolved(null);
   };
