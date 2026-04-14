@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import BottomNav from './components/BottomNav';
 import Loader from './components/Loader';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -79,7 +79,7 @@ export default function App() {
   }
 
   return (
-    <HashRouter>
+    <BrowserRouter>
       <div className="app-bg" />
       <ErrorBoundary>
         <Routes>
@@ -91,6 +91,6 @@ export default function App() {
         </Routes>
       </ErrorBoundary>
       <BottomNav />
-    </HashRouter>
+    </BrowserRouter>
   );
 }
