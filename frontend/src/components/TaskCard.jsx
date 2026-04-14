@@ -56,7 +56,7 @@ export default function TaskCard({ task, onComplete }) {
   return (
     <div className={`task-card card ${isCompleted ? 'completed' : ''}`} id={`task-${task.id}`}>
       <div className="task-card-top">
-        {task.is_ad && task.image_url ? (
+        {task.image_url ? (
           <img src={task.image_url} alt="" className="task-card-avatar" />
         ) : (
           <div className="task-card-icon">{task.icon || '📋'}</div>

@@ -34,9 +34,9 @@ router.get('/', async (req, res) => {
         CASE WHEN atc.id IS NOT NULL THEN 1 ELSE 0 END as is_completed,
         1 as is_ad, at2.advertiser_id
       FROM ad_tasks at2
-      LEFT JOIN ad_task_completions atc ON atc.task_id = at2.id AND atc.user_id = ?
+      LEFT JOIN ad_task_completions atc ON atc.task_id = at2.id AND atc.user_id = CAST(? AS BIGINT)
       WHERE at2.status = 'active' 
-        AND at2.advertiser_id != ?
+        AND at2.advertiser_id != CAST(? AS BIGINT)
         AND at2.current_completions < at2.max_completions
       ORDER BY at2.created_at DESC
     `, userId, userId);

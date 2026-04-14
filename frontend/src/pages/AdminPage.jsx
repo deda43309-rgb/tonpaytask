@@ -50,6 +50,7 @@ export default function AdminPage({ user }) {
           title: data.title || f.title,
           description: data.description || f.description,
           target_id: data.username ? '@' + data.username : f.target_id,
+          image_url: data.image_url || null,
         }));
       }
     } catch (err) {

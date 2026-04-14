@@ -182,9 +182,14 @@ async function initTables() {
       is_active INTEGER DEFAULT 1,
       max_completions INTEGER DEFAULT 0,
       current_completions INTEGER DEFAULT 0,
+      image_url TEXT DEFAULT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
+
+  try {
+    await db.exec(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT NULL;`);
+  } catch (e) {}
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS task_completions (

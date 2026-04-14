@@ -61,7 +61,7 @@ router.get('/tasks', async (req, res) => {
 router.post('/tasks', async (req, res) => {
   try {
     const db = getDb();
-    const { type, title, description, reward, target_url, target_id, icon, sort_order, max_completions } = req.body;
+    const { type, title, description, reward, target_url, target_id, icon, sort_order, max_completions, image_url } = req.body;
 
     if (!type || !title || !target_url) {
       return res.status(400).json({ error: 'type, title, and target_url are required' });
@@ -73,8 +73,8 @@ router.post('/tasks', async (req, res) => {
     }
 
     const result = await db.get(`
-      INSERT INTO tasks (type, title, description, reward, target_url, target_id, icon, sort_order, max_completions)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO tasks (type, title, description, reward, target_url, target_id, icon, sort_order, max_completions, image_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
     `,
       type,
@@ -85,7 +85,8 @@ router.post('/tasks', async (req, res) => {
       target_id || '',
       icon || '📋',
       sort_order || 0,
-      max_completions || 0
+      max_completions || 0,
+      image_url || null
     );
 
     res.json({ task: result });
@@ -103,7 +104,7 @@ router.put('/tasks/:id', async (req, res) => {
   try {
     const db = getDb();
     const taskId = parseInt(req.params.id);
-    const { type, title, description, reward, target_url, target_id, icon, sort_order, is_active, max_completions } = req.body;
+    const { type, title, description, reward, target_url, target_id, icon, sort_order, is_active, max_completions, image_url } = req.body;
 
     const existing = await db.get('SELECT * FROM tasks WHERE id = ?', taskId);
     if (!existing) {
@@ -114,7 +115,7 @@ router.put('/tasks/:id', async (req, res) => {
       UPDATE tasks SET
         type = ?, title = ?, description = ?, reward = ?,
         target_url = ?, target_id = ?, icon = ?,
-        sort_order = ?, is_active = ?, max_completions = ?
+        sort_order = ?, is_active = ?, max_completions = ?, image_url = ?
       WHERE id = ?
     `,
       type ?? existing.type,
@@ -127,6 +128,7 @@ router.put('/tasks/:id', async (req, res) => {
       sort_order ?? existing.sort_order,
       is_active ?? existing.is_active,
       max_completions ?? existing.max_completions,
+      image_url ?? existing.image_url,
       taskId
     );
 
