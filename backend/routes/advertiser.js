@@ -16,55 +16,51 @@ router.post('/resolve-url', async (req, res) => {
     const bot = getBot();
     if (!bot) return res.status(500).json({ error: 'Bot not initialized' });
 
-    // Extract username from various URL formats
-    let username = url.trim();
-    let startParam = null;
-
-    // Handle t.me/username?start=xxx (bot deep links)
-    const botMatch = url.match(/(?:https?:\/\/)?t\.me\/([a-zA-Z0-9_]+)\?start=(.+)/);
-    if (botMatch) {
-      username = botMatch[1];
-      startParam = botMatch[2];
-    } else {
-      // Handle t.me/username or t.me/+inviteCode
-      const match = url.match(/(?:https?:\/\/)?t\.me\/\+?([a-zA-Z0-9_]+)/);
-      if (match) username = match[1];
+    // Extract username — handles t.me/username, t.me/username?start=xxx, t.me/+code
+    const match = url.trim().match(/t\.me\/([^/?]+)/);
+    if (!match) {
+      return res.json({ success: true, title: url.trim(), description: '', image_url: null, username: '', members_count: null });
     }
-    username = username.replace(/^@/, '');
+    const username = match[1];
 
-    try {
-      const chat = await bot.getChat('@' + username);
-      
-      let photoUrl = null;
-      if (chat.photo && chat.photo.small_file_id) {
-        try {
-          const file = await bot.getFile(chat.photo.small_file_id);
-          photoUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
-        } catch (e) {
-          console.error('Failed to get chat photo:', e.message);
-        }
-      }
+    // Try to get chat info (graceful — .catch returns null)
+    const chat = await bot.getChat('@' + username).catch(() => null);
 
-      res.json({
-        success: true,
-        title: chat.title || chat.first_name || username,
-        description: chat.description || chat.bio || '',
-        image_url: photoUrl,
-        username: chat.username || username,
-        members_count: chat.member_count || null,
-      });
-    } catch (apiErr) {
-      console.error('Telegram API resolve fallback for:', username);
-      // Graceful fallback — return username as title, don't block task creation
-      res.json({
+    if (!chat) {
+      // Bot can't access this chat — return username as fallback
+      return res.json({
         success: true,
         title: '@' + username,
-        description: startParam ? `Start: ${startParam}` : '',
+        description: '',
         image_url: null,
         username: username,
         members_count: null,
       });
     }
+
+    // Get member count separately (more reliable)
+    const memberCount = await bot.getChatMemberCount('@' + username).catch(() => 0);
+
+    // Get photo (use big_file_id for better quality)
+    let photoUrl = null;
+    if (chat.photo) {
+      const fileId = chat.photo.big_file_id || chat.photo.small_file_id;
+      if (fileId) {
+        const fileInfo = await bot.getFile(fileId).catch(() => null);
+        if (fileInfo?.file_path) {
+          photoUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${fileInfo.file_path}`;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      title: chat.title || chat.first_name || username,
+      description: chat.description || chat.bio || '',
+      image_url: photoUrl,
+      username: chat.username || username,
+      members_count: memberCount || null,
+    });
   } catch (error) {
     console.error('Resolve URL error:', error);
     res.status(500).json({ error: 'Internal server error' });
