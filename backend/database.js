@@ -273,6 +273,7 @@ function initTables() {
   try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_user_reward', '10'); } catch(e) {}
   try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_ref_reward', '2'); } catch(e) {}
   try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_commission', '8'); } catch(e) {}
+  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('admin_balance', '0'); } catch(e) {}
 
   // Ad transactions log
   db.exec(`

@@ -299,7 +299,16 @@ export default function AdminPage({ user }) {
           {/* Revenue Tab */}
           {tab === 'revenue' && revenue && (
             <div className="admin-stats stagger">
-              <div className="admin-stats-grid">
+              {/* Admin Balance */}
+              <div className="card" style={{ padding: 20, textAlign: 'center', background: 'linear-gradient(135deg, rgba(52, 199, 89, 0.08), rgba(52, 199, 89, 0.02))', border: '1px solid rgba(52, 199, 89, 0.15)' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>💰 Баланс системы</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: revenue.admin_balance >= 0 ? '#34c759' : '#ff3b30' }}>{revenue.admin_balance.toLocaleString()} pts</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                  📈 Комиссия: +{revenue.commission.total.toLocaleString()} · 📉 Расходы заданий: −{revenue.task_expenses.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="admin-stats-grid" style={{ marginTop: 16 }}>
                 <div className="card admin-stat-card">
                   <span className="admin-stat-icon">🏦</span>
                   <span className="admin-stat-value" style={{ color: '#34c759' }}>{revenue.commission.total.toLocaleString()}</span>

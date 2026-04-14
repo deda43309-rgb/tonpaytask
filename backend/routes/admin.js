@@ -294,7 +294,18 @@ router.get('/ad-revenue', (req, res) => {
     // Total deposited by advertisers
     const totalDeposited = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM ad_deposits').get();
 
+    // Admin balance
+    const adminBal = db.prepare("SELECT value FROM settings WHERE key = 'admin_balance'").get();
+    
+    // Total spent on admin tasks
+    const taskExpenses = db.prepare(`
+      SELECT COALESCE(SUM(t.reward * t.current_completions), 0) as total
+      FROM tasks t
+    `).get();
+
     res.json({
+      admin_balance: parseInt(adminBal?.value || '0'),
+      task_expenses: taskExpenses.total,
       commission: byType.commission || { total: 0, count: 0 },
       user_rewards: byType.user_reward || { total: 0, count: 0 },
       ref_rewards: byType.ref_reward || { total: 0, count: 0 },

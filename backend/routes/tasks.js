@@ -125,6 +125,9 @@ router.post('/:id/complete', async (req, res) => {
         WHERE id = ?
       `).run(task.reward, task.reward, userId);
 
+      // Deduct from admin balance
+      db.prepare("UPDATE settings SET value = CAST(CAST(value AS INTEGER) - ? AS TEXT) WHERE key = 'admin_balance'").run(task.reward);
+
       // Update task completion count
       db.prepare('UPDATE tasks SET current_completions = current_completions + 1 WHERE id = ?').run(taskId);
 
@@ -232,6 +235,8 @@ router.post('/:id/complete-ad', async (req, res) => {
       // Log system commission (includes unclaimed ref reward if no referrer)
       if (actualCommission > 0) {
         db.prepare('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)').run(taskId, null, 'commission', actualCommission);
+        // Credit admin balance with commission
+        db.prepare("UPDATE settings SET value = CAST(CAST(value AS INTEGER) + ? AS TEXT) WHERE key = 'admin_balance'").run(actualCommission);
       }
 
       // Update ad task completion count
