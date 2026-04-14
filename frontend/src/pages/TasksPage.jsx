@@ -68,12 +68,10 @@ export default function TasksPage({ onUserUpdate }) {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const filteredTasks = filter === 'all'
+  const filteredTasks = (filter === 'all'
     ? tasks
-    : tasks.filter(t => t.type === filter);
-
-  const activeTasks = filteredTasks.filter(t => !t.is_completed);
-  const completedTasks = filteredTasks.filter(t => t.is_completed);
+    : tasks.filter(t => t.type === filter)
+  ).filter(t => !t.is_completed);
 
   if (loading) return <Loader text="Загрузка заданий..." />;
 
@@ -81,7 +79,7 @@ export default function TasksPage({ onUserUpdate }) {
     <div className="page tasks-page">
       <div className="section-header">
         <h1 className="section-title">📋 Задания</h1>
-        <span className="badge badge-accent">{activeTasks.length} доступно</span>
+        <span className="badge badge-accent">{filteredTasks.length} доступно</span>
       </div>
 
       {/* Filters */}
@@ -98,10 +96,10 @@ export default function TasksPage({ onUserUpdate }) {
         ))}
       </div>
 
-      {/* Active Tasks */}
-      {activeTasks.length > 0 ? (
+      {/* Tasks */}
+      {filteredTasks.length > 0 ? (
         <div className="tasks-list stagger">
-          {activeTasks.map(task => (
+          {filteredTasks.map(task => (
             <TaskCard key={task.is_ad ? `ad-${task.id}` : task.id} task={task} onComplete={handleComplete} />
           ))}
         </div>
@@ -110,20 +108,6 @@ export default function TasksPage({ onUserUpdate }) {
           <span className="empty-state-icon">🎯</span>
           <h3 className="empty-state-title">Нет доступных заданий</h3>
           <p className="empty-state-text">Новые задания скоро появятся!</p>
-        </div>
-      )}
-
-      {/* Completed Section */}
-      {completedTasks.length > 0 && (
-        <div className="completed-section mt-24">
-          <h2 className="section-title" style={{ fontSize: 15 }}>
-            ✅ Выполненные ({completedTasks.length})
-          </h2>
-          <div className="tasks-list mt-12 stagger">
-            {completedTasks.map(task => (
-              <TaskCard key={task.is_ad ? `ad-${task.id}` : task.id} task={task} onComplete={handleComplete} />
-            ))}
-          </div>
         </div>
       )}
 
