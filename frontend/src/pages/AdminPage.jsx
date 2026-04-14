@@ -516,15 +516,6 @@ export default function AdminPage({ user }) {
 
             <div className="form-row">
               <div className="form-group" style={{ flex: 1 }}>
-                <label className="form-label">Награда</label>
-                <input
-                  className="input"
-                  type="number"
-                  value={taskForm.reward}
-                  onChange={e => setTaskForm({ ...taskForm, reward: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="form-group" style={{ flex: 1 }}>
                 <label className="form-label">Иконка</label>
                 <input
                   className="input"
