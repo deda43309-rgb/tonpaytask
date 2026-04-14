@@ -13,56 +13,60 @@ function initBot(token) {
     const startParam = match[1]?.trim();
     const db = getDb();
 
-    // Create or get user
-    let user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    try {
+      // Create or get user
+      let user = await db.get('SELECT * FROM users WHERE id = ?', userId);
 
-    if (!user) {
-      const refCode = generateReferralCode();
-      db.prepare(`
-        INSERT INTO users (id, username, first_name, last_name, referral_code)
-        VALUES (?, ?, ?, ?, ?)
-      `).run(
-        userId,
-        msg.from.username || '',
-        msg.from.first_name || '',
-        msg.from.last_name || '',
-        refCode
-      );
-      user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+      if (!user) {
+        const refCode = generateReferralCode();
+        await db.run(
+          `INSERT INTO users (id, username, first_name, last_name, referral_code)
+           VALUES (?, ?, ?, ?, ?)`,
+          userId,
+          msg.from.username || '',
+          msg.from.first_name || '',
+          msg.from.last_name || '',
+          refCode
+        );
+        user = await db.get('SELECT * FROM users WHERE id = ?', userId);
 
-      // Process referral
-      if (startParam && startParam.startsWith('ref_')) {
-        const referrerCode = startParam.replace('ref_', '');
-        const referrer = db.prepare('SELECT * FROM users WHERE referral_code = ?').get(referrerCode);
+        // Process referral
+        if (startParam && startParam.startsWith('ref_')) {
+          const referrerCode = startParam.replace('ref_', '');
+          const referrer = await db.get('SELECT * FROM users WHERE referral_code = ?', referrerCode);
 
-        if (referrer && referrer.id !== userId) {
-          const bonus = parseInt(process.env.REFERRAL_BONUS) || 100;
+          if (referrer && referrer.id !== BigInt(userId) && referrer.id != userId) {
+            const bonus = parseInt(process.env.REFERRAL_BONUS) || 100;
 
-          db.prepare('UPDATE users SET referred_by = ? WHERE id = ?').run(referrer.id, userId);
-          db.prepare('UPDATE users SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?').run(bonus, bonus, referrer.id);
-          db.prepare('UPDATE users SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?').run(bonus, bonus, userId);
+            await db.run('UPDATE users SET referred_by = ? WHERE id = ?', referrer.id, userId);
+            await db.run('UPDATE users SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?', bonus, bonus, referrer.id);
+            await db.run('UPDATE users SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?', bonus, bonus, userId);
 
-          db.prepare(`
-            INSERT INTO referrals (referrer_id, referred_id, bonus)
-            VALUES (?, ?, ?)
-          `).run(referrer.id, userId, bonus);
-
-          // Notify referrer
-          try {
-            bot.sendMessage(referrer.id, 
-              `🎉 Новый реферал! ${msg.from.first_name} присоединился по вашей ссылке.\n+${bonus} Points!`
+            await db.run(
+              `INSERT INTO referrals (referrer_id, referred_id, bonus)
+               VALUES (?, ?, ?)`,
+              referrer.id, userId, bonus
             );
-          } catch (e) {
-            console.error('Failed to notify referrer:', e);
+
+            // Notify referrer
+            try {
+              bot.sendMessage(referrer.id,
+                `🎉 Новый реферал! ${msg.from.first_name} присоединился по вашей ссылке.\n+${bonus} Points!`
+              );
+            } catch (e) {
+              console.error('Failed to notify referrer:', e);
+            }
           }
         }
       }
+    } catch (err) {
+      console.error('Bot /start error:', err);
     }
 
     // Welcome message with Mini App button
     const webAppUrl = process.env.WEBAPP_URL || process.env.FRONTEND_URL || 'https://tonpaytask-production.up.railway.app';
-    
-    bot.sendMessage(chatId, 
+
+    bot.sendMessage(chatId,
       `👋 Привет, ${msg.from.first_name}!\n\n` +
       `💰 Добро пожаловать в *TonPayTask*!\n\n` +
       `Выполняй простые задания и зарабатывай Points:\n` +
@@ -83,36 +87,44 @@ function initBot(token) {
   });
 
   // /balance command
-  bot.onText(/\/balance/, (msg) => {
+  bot.onText(/\/balance/, async (msg) => {
     const db = getDb();
-    const user = db.prepare('SELECT balance, tasks_completed FROM users WHERE id = ?').get(msg.from.id);
-    
-    if (user) {
-      bot.sendMessage(msg.chat.id, 
-        `💰 Ваш баланс: *${user.balance} Points*\n` +
-        `✅ Заданий выполнено: ${user.tasks_completed}`,
-        { parse_mode: 'Markdown' }
-      );
-    } else {
-      bot.sendMessage(msg.chat.id, 'Пожалуйста, нажмите /start чтобы зарегистрироваться.');
+    try {
+      const user = await db.get('SELECT balance, tasks_completed FROM users WHERE id = ?', msg.from.id);
+
+      if (user) {
+        bot.sendMessage(msg.chat.id,
+          `💰 Ваш баланс: *${user.balance} Points*\n` +
+          `✅ Заданий выполнено: ${user.tasks_completed}`,
+          { parse_mode: 'Markdown' }
+        );
+      } else {
+        bot.sendMessage(msg.chat.id, 'Пожалуйста, нажмите /start чтобы зарегистрироваться.');
+      }
+    } catch (err) {
+      console.error('Bot /balance error:', err);
     }
   });
 
   // /referral command
-  bot.onText(/\/referral/, (msg) => {
+  bot.onText(/\/referral/, async (msg) => {
     const db = getDb();
-    const user = db.prepare('SELECT referral_code FROM users WHERE id = ?').get(msg.from.id);
-    
-    if (user) {
-      const botUsername = bot.options?.username || 'TonPayTaskBot';
-      const refLink = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
-      
-      bot.sendMessage(msg.chat.id,
-        `👥 Ваша реферальная ссылка:\n\n` +
-        `\`${refLink}\`\n\n` +
-        `Поделитесь с друзьями и получите бонус!`,
-        { parse_mode: 'Markdown' }
-      );
+    try {
+      const user = await db.get('SELECT referral_code FROM users WHERE id = ?', msg.from.id);
+
+      if (user) {
+        const botUsername = bot.options?.username || 'TonPayTaskBot';
+        const refLink = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
+
+        bot.sendMessage(msg.chat.id,
+          `👥 Ваша реферальная ссылка:\n\n` +
+          `\`${refLink}\`\n\n` +
+          `Поделитесь с друзьями и получите бонус!`,
+          { parse_mode: 'Markdown' }
+        );
+      }
+    } catch (err) {
+      console.error('Bot /referral error:', err);
     }
   });
 
