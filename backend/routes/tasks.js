@@ -208,8 +208,13 @@ router.post('/:id/complete-ad', async (req, res) => {
         WHERE id = ?
       `).run(userReward, userReward, userId);
 
+      // Log user reward transaction
+      db.prepare('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)').run(taskId, userId, 'user_reward', userReward);
+
       // Credit referrer bonus (ad_ref_reward)
       const executor = db.prepare('SELECT referred_by FROM users WHERE id = ?').get(userId);
+      let actualCommission = task.reward - userReward; // everything left is commission
+
       if (executor && executor.referred_by && refReward > 0) {
         db.prepare(`
           UPDATE users SET 
@@ -218,6 +223,15 @@ router.post('/:id/complete-ad', async (req, res) => {
             updated_at = datetime('now')
           WHERE id = ?
         `).run(refReward, refReward, executor.referred_by);
+
+        // Log ref reward transaction
+        db.prepare('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)').run(taskId, executor.referred_by, 'ref_reward', refReward);
+        actualCommission = task.reward - userReward - refReward;
+      }
+
+      // Log system commission (includes unclaimed ref reward if no referrer)
+      if (actualCommission > 0) {
+        db.prepare('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)').run(taskId, null, 'commission', actualCommission);
       }
 
       // Update ad task completion count

@@ -62,6 +62,7 @@ export const deleteTask = (id) =>
 export const getAdminUsers = (page = 1) =>
   request(`/admin/users?page=${page}`);
 export const getAdminSettings = () => request('/admin/settings');
+export const getAdRevenue = () => request('/admin/ad-revenue');
 export const updateAdminSettings = (data) =>
   request('/admin/settings', {
     method: 'PUT',

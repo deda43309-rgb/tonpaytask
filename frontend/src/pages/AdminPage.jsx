@@ -17,6 +17,7 @@ export default function AdminPage({ user }) {
   const [toast, setToast] = useState(null);
   const [settings, setSettings] = useState({});
   const [savingSettings, setSavingSettings] = useState(false);
+  const [revenue, setRevenue] = useState(null);
 
   // Task form state
   const [taskForm, setTaskForm] = useState({
@@ -54,6 +55,9 @@ export default function AdminPage({ user }) {
       } else if (tab === 'settings') {
         const data = await api.getAdminSettings();
         setSettings(data.settings || {});
+      } else if (tab === 'revenue') {
+        const data = await api.getAdRevenue();
+        setRevenue(data);
       }
     } catch (err) {
       console.error('Admin load error:', err);
@@ -157,7 +161,7 @@ export default function AdminPage({ user }) {
 
       {/* Tabs */}
       <div className="filter-tabs mt-16">
-        {['stats', 'tasks', 'users', 'settings'].map(t => (
+        {['stats', 'tasks', 'users', 'revenue', 'settings'].map(t => (
           <button
             key={t}
             className={`filter-tab ${tab === t ? 'active' : ''}`}
@@ -165,9 +169,10 @@ export default function AdminPage({ user }) {
             id={`admin-tab-${t}`}
           >
             {t === 'stats' && '📊 Стат'}
-            {t === 'tasks' && '📋 Задания'}
-            {t === 'users' && '👥 Юзеры'}
-            {t === 'settings' && '⚙️ Настр.'}
+            {t === 'tasks' && '📋 Зад.'}
+            {t === 'users' && '👥 Юз.'}
+            {t === 'revenue' && '💰 Доход'}
+            {t === 'settings' && '⚙️ Наст.'}
           </button>
         ))}
       </div>
@@ -286,6 +291,76 @@ export default function AdminPage({ user }) {
                 <div className="empty-state">
                   <span className="empty-state-icon">👥</span>
                   <h3 className="empty-state-title">Нет пользователей</h3>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Revenue Tab */}
+          {tab === 'revenue' && revenue && (
+            <div className="admin-stats stagger">
+              <div className="admin-stats-grid">
+                <div className="card admin-stat-card">
+                  <span className="admin-stat-icon">🏦</span>
+                  <span className="admin-stat-value" style={{ color: '#34c759' }}>{revenue.commission.total.toLocaleString()}</span>
+                  <span className="admin-stat-label">Комиссия системы</span>
+                </div>
+                <div className="card admin-stat-card">
+                  <span className="admin-stat-icon">🎯</span>
+                  <span className="admin-stat-value">{revenue.user_rewards.total.toLocaleString()}</span>
+                  <span className="admin-stat-label">Выплата юзерам</span>
+                </div>
+                <div className="card admin-stat-card">
+                  <span className="admin-stat-icon">👥</span>
+                  <span className="admin-stat-value">{revenue.ref_rewards.total.toLocaleString()}</span>
+                  <span className="admin-stat-label">Реф. награды</span>
+                </div>
+                <div className="card admin-stat-card">
+                  <span className="admin-stat-icon">💳</span>
+                  <span className="admin-stat-value">{revenue.total_deposited.toLocaleString()}</span>
+                  <span className="admin-stat-label">Всего депозитов</span>
+                </div>
+              </div>
+
+              <div className="card mt-16" style={{ padding: 16 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>📅 Сегодня</h3>
+                <div className="admin-today-grid">
+                  <div className="admin-today-item">
+                    <span className="admin-today-value" style={{ color: '#34c759' }}>{revenue.today.commission}</span>
+                    <span className="admin-today-label">Комиссия</span>
+                  </div>
+                  <div className="admin-today-item">
+                    <span className="admin-today-value">{revenue.today.user_rewards}</span>
+                    <span className="admin-today-label">Юзерам</span>
+                  </div>
+                  <div className="admin-today-item">
+                    <span className="admin-today-value">{revenue.today.ref_rewards}</span>
+                    <span className="admin-today-label">Рефералам</span>
+                  </div>
+                </div>
+              </div>
+
+              {revenue.top_users.length > 0 && (
+                <div className="card mt-16" style={{ padding: 16 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>🏆 Топ исполнители</h3>
+                  {revenue.top_users.map((u, i) => (
+                    <div key={u.user_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < revenue.top_users.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      <span style={{ fontSize: 13 }}>{i + 1}. {u.first_name || u.username || `#${u.user_id}`}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)' }}>+{u.total_earned}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {revenue.top_refs.length > 0 && (
+                <div className="card mt-16" style={{ padding: 16 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>👥 Топ рефереры</h3>
+                  {revenue.top_refs.map((u, i) => (
+                    <div key={u.user_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < revenue.top_refs.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      <span style={{ fontSize: 13 }}>{i + 1}. {u.first_name || u.username || `#${u.user_id}`}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-secondary)' }}>+{u.total_earned}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

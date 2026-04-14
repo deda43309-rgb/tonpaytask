@@ -239,4 +239,78 @@ router.put('/settings', (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/ad-revenue
+ * Статистика доходов рекламной системы
+ */
+router.get('/ad-revenue', (req, res) => {
+  try {
+    const db = getDb();
+
+    // Total by type
+    const totals = db.prepare(`
+      SELECT type, COALESCE(SUM(amount), 0) as total, COUNT(*) as count
+      FROM ad_transactions
+      GROUP BY type
+    `).all();
+
+    const byType = {};
+    totals.forEach(r => { byType[r.type] = { total: r.total, count: r.count }; });
+
+    // Today's revenue
+    const today = new Date().toISOString().split('T')[0];
+    const todayTotals = db.prepare(`
+      SELECT type, COALESCE(SUM(amount), 0) as total
+      FROM ad_transactions
+      WHERE created_at >= ?
+      GROUP BY type
+    `).all(today);
+
+    const todayByType = {};
+    todayTotals.forEach(r => { todayByType[r.type] = r.total; });
+
+    // Top earners (users)
+    const topUsers = db.prepare(`
+      SELECT t.user_id, u.first_name, u.username, SUM(t.amount) as total_earned
+      FROM ad_transactions t
+      JOIN users u ON u.id = t.user_id
+      WHERE t.type = 'user_reward'
+      GROUP BY t.user_id
+      ORDER BY total_earned DESC
+      LIMIT 10
+    `).all();
+
+    // Top referrers
+    const topRefs = db.prepare(`
+      SELECT t.user_id, u.first_name, u.username, SUM(t.amount) as total_earned
+      FROM ad_transactions t
+      JOIN users u ON u.id = t.user_id
+      WHERE t.type = 'ref_reward'
+      GROUP BY t.user_id
+      ORDER BY total_earned DESC
+      LIMIT 10
+    `).all();
+
+    // Total deposited by advertisers
+    const totalDeposited = db.prepare('SELECT COALESCE(SUM(amount), 0) as total FROM ad_deposits').get();
+
+    res.json({
+      commission: byType.commission || { total: 0, count: 0 },
+      user_rewards: byType.user_reward || { total: 0, count: 0 },
+      ref_rewards: byType.ref_reward || { total: 0, count: 0 },
+      today: {
+        commission: todayByType.commission || 0,
+        user_rewards: todayByType.user_reward || 0,
+        ref_rewards: todayByType.ref_reward || 0,
+      },
+      total_deposited: totalDeposited.total,
+      top_users: topUsers,
+      top_refs: topRefs,
+    });
+  } catch (error) {
+    console.error('Admin ad-revenue error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

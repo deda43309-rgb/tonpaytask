@@ -274,6 +274,20 @@ function initTables() {
   try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_ref_reward', '2'); } catch(e) {}
   try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_commission', '8'); } catch(e) {}
 
+  // Ad transactions log
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ad_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL,
+      user_id INTEGER,
+      type TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_transactions_type ON ad_transactions(type)'); } catch(e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_transactions_user ON ad_transactions(user_id)'); } catch(e) {}
+
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_user ON task_completions(user_id)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_task ON task_completions(task_id)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id)'); } catch(e) {}
