@@ -159,20 +159,23 @@ export default function AdminPage({ user }) {
         <h1 className="section-title">⚙️ Админ</h1>
       </div>
 
-      {/* Tabs */}
-      <div className="filter-tabs mt-16">
-        {['stats', 'tasks', 'users', 'revenue', 'settings'].map(t => (
+      {/* Menu Grid */}
+      <div className="admin-menu mt-16">
+        {[
+          { key: 'stats', icon: '📊', label: 'Статистика' },
+          { key: 'tasks', icon: '📋', label: 'Задания' },
+          { key: 'users', icon: '👥', label: 'Юзеры' },
+          { key: 'revenue', icon: '💰', label: 'Доход' },
+          { key: 'settings', icon: '⚙️', label: 'Настройки' },
+        ].map(item => (
           <button
-            key={t}
-            className={`filter-tab ${tab === t ? 'active' : ''}`}
-            onClick={() => { setTab(t); hapticFeedback('light'); }}
-            id={`admin-tab-${t}`}
+            key={item.key}
+            className={`admin-menu-item ${tab === item.key ? 'active' : ''}`}
+            onClick={() => { setTab(item.key); hapticFeedback('light'); }}
+            id={`admin-tab-${item.key}`}
           >
-            {t === 'stats' && '📊 Стат'}
-            {t === 'tasks' && '📋 Зад.'}
-            {t === 'users' && '👥 Юз.'}
-            {t === 'revenue' && '💰 Доход'}
-            {t === 'settings' && '⚙️ Наст.'}
+            <span className="admin-menu-icon">{item.icon}</span>
+            <span className="admin-menu-label">{item.label}</span>
           </button>
         ))}
       </div>
