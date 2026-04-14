@@ -16,10 +16,20 @@ router.post('/resolve-url', async (req, res) => {
     const bot = getBot();
     if (!bot) return res.status(500).json({ error: 'Bot not initialized' });
 
-    // Extract username from URL
-    let username = url;
-    const match = url.match(/(?:https?:\/\/)?t\.me\/([a-zA-Z0-9_]+)/);
-    if (match) username = match[1];
+    // Extract username from various URL formats
+    let username = url.trim();
+    let startParam = null;
+
+    // Handle t.me/username?start=xxx (bot deep links)
+    const botMatch = url.match(/(?:https?:\/\/)?t\.me\/([a-zA-Z0-9_]+)\?start=(.+)/);
+    if (botMatch) {
+      username = botMatch[1];
+      startParam = botMatch[2];
+    } else {
+      // Handle t.me/username or t.me/+inviteCode
+      const match = url.match(/(?:https?:\/\/)?t\.me\/\+?([a-zA-Z0-9_]+)/);
+      if (match) username = match[1];
+    }
     username = username.replace(/^@/, '');
 
     try {
@@ -44,13 +54,15 @@ router.post('/resolve-url', async (req, res) => {
         members_count: chat.member_count || null,
       });
     } catch (apiErr) {
-      console.error('Telegram API error:', apiErr.message);
+      console.error('Telegram API resolve fallback for:', username);
+      // Graceful fallback — return username as title, don't block task creation
       res.json({
-        success: false,
-        title: username,
-        description: '',
+        success: true,
+        title: '@' + username,
+        description: startParam ? `Start: ${startParam}` : '',
         image_url: null,
-        error: 'Канал/бот не найден или бот не имеет доступа',
+        username: username,
+        members_count: null,
       });
     }
   } catch (error) {
