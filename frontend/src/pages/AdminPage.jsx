@@ -431,6 +431,27 @@ export default function AdminPage({ user }) {
                     Из этого баланса списывается стоимость заданий (reward × кол-во)
                   </div>
                 </div>
+                <button
+                  className="btn btn-primary btn-block"
+                  onClick={async () => {
+                    const pin = prompt('🔐 Введите PIN-код для изменения баланса:');
+                    if (!pin) return;
+                    try {
+                      const res = await api.updateAdminSettings({
+                        admin_balance: settings.admin_balance,
+                        pin: pin,
+                      });
+                      setSettings(res.settings);
+                      showToastMsg('Баланс обновлён ✅');
+                      hapticFeedback('success');
+                    } catch (err) {
+                      showToastMsg(err.message || 'Неверный PIN', 'error');
+                      hapticFeedback('error');
+                    }
+                  }}
+                >
+                  🔐 Сохранить баланс
+                </button>
               </div>
 
               <div className="card" style={{ padding: 20 }}>
@@ -500,7 +521,6 @@ export default function AdminPage({ user }) {
                         ad_user_reward: settings.ad_user_reward,
                         ad_ref_reward: settings.ad_ref_reward,
                         ad_commission: settings.ad_commission,
-                        admin_balance: settings.admin_balance,
                       });
                       setSettings(res.settings);
                       showToastMsg('Настройки сохранены ✅');

@@ -248,6 +248,22 @@ router.put('/settings', async (req, res) => {
     const db = getDb();
     const fields = ['ad_price', 'ad_user_reward', 'ad_ref_reward', 'ad_commission'];
 
+    // If admin_balance is being changed, require PIN
+    if (req.body.admin_balance !== undefined) {
+      const pin = req.body.pin;
+      const correctPin = process.env.ADMIN_PIN || '1234';
+      if (!pin || String(pin) !== String(correctPin)) {
+        return res.status(403).json({ error: 'Неверный PIN-код' });
+      }
+      const val = parseInt(req.body.admin_balance);
+      if (val >= 0 && val <= 999999999) {
+        await db.run(
+          "INSERT INTO settings (key, value) VALUES ('admin_balance', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+          String(val)
+        );
+      }
+    }
+
     for (const key of fields) {
       if (req.body[key] !== undefined) {
         const val = parseInt(req.body[key]);
