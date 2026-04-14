@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../components/Loader';
 import { hapticFeedback } from '../utils/telegram';
@@ -18,6 +18,9 @@ export default function AdminPage({ user }) {
   const [settings, setSettings] = useState({});
   const [savingSettings, setSavingSettings] = useState(false);
   const [revenue, setRevenue] = useState(null);
+  const [resolving, setResolving] = useState(false);
+  const [resolved, setResolved] = useState(null);
+  const resolveTimer = useRef(null);
 
   // Task form state
   const [taskForm, setTaskForm] = useState({
@@ -31,6 +34,30 @@ export default function AdminPage({ user }) {
     sort_order: 0,
     max_completions: 0,
   });
+
+  // Auto-resolve Telegram URL
+  const resolveUrl = useCallback(async (url, type) => {
+    if (!url || type === 'visit_link') { setResolved(null); return; }
+    const isTg = url.includes('t.me/') || /^@?[a-zA-Z0-9_]{3,}$/.test(url);
+    if (!isTg) { setResolved(null); return; }
+    setResolving(true);
+    try {
+      const data = await api.resolveAdUrl(url, type);
+      setResolved(data);
+      if (data.success) {
+        setTaskForm(f => ({
+          ...f,
+          title: data.title || f.title,
+          description: data.description || f.description,
+          target_id: data.username ? '@' + data.username : f.target_id,
+        }));
+      }
+    } catch (err) {
+      console.error('Resolve error:', err);
+    } finally {
+      setResolving(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!user?.is_admin) {
@@ -531,8 +558,27 @@ export default function AdminPage({ user }) {
                 className="input"
                 placeholder="https://t.me/..."
                 value={taskForm.target_url}
-                onChange={e => setTaskForm({ ...taskForm, target_url: e.target.value })}
+                onChange={e => {
+                  const newUrl = e.target.value;
+                  setTaskForm({ ...taskForm, target_url: newUrl });
+                  setResolved(null);
+                  if (resolveTimer.current) clearTimeout(resolveTimer.current);
+                  resolveTimer.current = setTimeout(() => resolveUrl(newUrl, taskForm.type), 500);
+                }}
               />
+              {resolving && <div style={{ fontSize: 12, color: 'var(--accent-primary)', marginTop: 4 }}>⏳ Загрузка...</div>}
+              {resolved && resolved.success && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, padding: 10, borderRadius: 10, background: 'var(--bg-glass)', border: '1px solid var(--border)' }}>
+                  {resolved.image_url && (
+                    <img src={resolved.image_url} alt="" style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover' }} />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>{resolved.title}</div>
+                    {resolved.members_count > 0 && <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>👥 {resolved.members_count.toLocaleString()} подписчиков</div>}
+                  </div>
+                  <span style={{ fontSize: 16 }}>✅</span>
+                </div>
+              )}
             </div>
 
             {taskForm.type === 'subscribe_channel' && (
