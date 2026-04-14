@@ -258,6 +258,8 @@ function initTables() {
 
   // Add ad_balance column to users if not exists
   try { db.exec('ALTER TABLE users ADD COLUMN ad_balance INTEGER DEFAULT 0'); } catch(e) {}
+  // Add image_url column to ad_tasks if not exists
+  try { db.exec('ALTER TABLE ad_tasks ADD COLUMN image_url TEXT DEFAULT NULL'); } catch(e) {}
 
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_user ON task_completions(user_id)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_task ON task_completions(task_id)'); } catch(e) {}

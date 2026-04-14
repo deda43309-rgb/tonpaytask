@@ -73,6 +73,11 @@ export const adDeposit = (amount) =>
     method: 'POST',
     body: JSON.stringify({ amount }),
   });
+export const resolveAdUrl = (url, type) =>
+  request('/advertiser/resolve-url', {
+    method: 'POST',
+    body: JSON.stringify({ url, type }),
+  });
 export const getAdTasks = () => request('/advertiser/tasks');
 export const getAdStats = () => request('/advertiser/stats');
 export const createAdTask = (data) =>

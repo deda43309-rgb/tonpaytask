@@ -90,3 +90,13 @@
   background: rgba(96, 165, 250, 0.12);
   color: var(--info);
 }
+
+/* Ad task avatar */
+.task-card-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}

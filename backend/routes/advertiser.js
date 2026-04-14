@@ -1,7 +1,65 @@
 const express = require('express');
 const { getDb } = require('../database');
+const { getBot } = require('../services/bot');
 
 const router = express.Router();
+
+/**
+ * POST /api/advertiser/resolve-url
+ * Резолв Telegram URL → название, аватарка канала/бота
+ */
+router.post('/resolve-url', async (req, res) => {
+  try {
+    const { url, type } = req.body;
+    if (!url) return res.status(400).json({ error: 'URL is required' });
+
+    const bot = getBot();
+    if (!bot) return res.status(500).json({ error: 'Bot not initialized' });
+
+    // Extract username from URL
+    let username = url;
+    const match = url.match(/(?:https?:\/\/)?t\.me\/([a-zA-Z0-9_]+)/);
+    if (match) username = match[1];
+    // Remove @ if present
+    username = username.replace(/^@/, '');
+
+    try {
+      const chat = await bot.getChat('@' + username);
+      
+      // Get photo URL if available
+      let photoUrl = null;
+      if (chat.photo && chat.photo.small_file_id) {
+        try {
+          const file = await bot.getFile(chat.photo.small_file_id);
+          photoUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+        } catch (e) {
+          console.error('Failed to get chat photo:', e.message);
+        }
+      }
+
+      res.json({
+        success: true,
+        title: chat.title || chat.first_name || username,
+        description: chat.description || chat.bio || '',
+        image_url: photoUrl,
+        username: chat.username || username,
+        members_count: chat.member_count || null,
+      });
+    } catch (apiErr) {
+      console.error('Telegram API error:', apiErr.message);
+      res.json({
+        success: false,
+        title: username,
+        description: '',
+        image_url: null,
+        error: 'Канал/бот не найден или бот не имеет доступа',
+      });
+    }
+  } catch (error) {
+    console.error('Resolve URL error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 /**
  * GET /api/advertiser/balance
@@ -85,7 +143,7 @@ router.post('/tasks', (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
-    const { title, description, url, type, reward, max_completions } = req.body;
+    const { title, description, url, type, reward, max_completions, image_url } = req.body;
 
     // Validation
     if (!title || !url || !type || !reward || !max_completions) {
@@ -121,9 +179,9 @@ router.post('/tasks', (req, res) => {
 
       // Create task
       const result = db.prepare(`
-        INSERT INTO ad_tasks (advertiser_id, title, description, url, type, reward, max_completions)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(userId, title, description || '', url, type, reward, max_completions);
+        INSERT INTO ad_tasks (advertiser_id, title, description, url, type, reward, max_completions, image_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(userId, title, description || '', url, type, reward, max_completions, image_url || null);
 
       const newTask = db.prepare('SELECT * FROM ad_tasks WHERE id = ?').get(result.lastInsertRowid);
       const updatedUser = db.prepare('SELECT ad_balance FROM users WHERE id = ?').get(userId);

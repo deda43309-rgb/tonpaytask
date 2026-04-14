@@ -30,6 +30,7 @@ router.get('/', (req, res) => {
         at2.url as target_url, at2.url as target_id,
         '📢' as icon, 999 as sort_order, 1 as is_active,
         at2.max_completions, at2.current_completions, at2.created_at,
+        at2.image_url,
         CASE WHEN atc.id IS NOT NULL THEN 1 ELSE 0 END as is_completed,
         1 as is_ad, at2.advertiser_id
       FROM ad_tasks at2

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { hapticFeedback } from '../utils/telegram';
 import * as api from '../utils/api';
@@ -11,11 +11,12 @@ const TASK_TYPES = [
   { value: 'visit_link', label: '🔗 Переход по ссылке', icon: '🔗' },
 ];
 
+const FIXED_REWARDS = [5, 10, 25, 50, 100];
 const DEPOSIT_AMOUNTS = [100, 500, 1000, 5000, 10000, 50000];
 
 export default function AdvertiserPage({ user }) {
   const navigate = useNavigate();
-  const [tab, setTab] = useState('tasks'); // tasks | create | stats
+  const [tab, setTab] = useState('tasks');
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(0);
   const [tasks, setTasks] = useState([]);
@@ -25,6 +26,11 @@ export default function AdvertiserPage({ user }) {
   const [depositing, setDepositing] = useState(false);
   const [creating, setCreating] = useState(false);
 
+  // Resolve state
+  const [resolving, setResolving] = useState(false);
+  const [resolved, setResolved] = useState(null);
+  const resolveTimer = useRef(null);
+
   // Create form state
   const [form, setForm] = useState({
     title: '',
@@ -33,6 +39,7 @@ export default function AdvertiserPage({ user }) {
     type: 'subscribe_channel',
     reward: 10,
     max_completions: 100,
+    image_url: null,
   });
 
   const loadData = useCallback(async () => {
@@ -54,6 +61,56 @@ export default function AdvertiserPage({ user }) {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Auto-resolve Telegram URL
+  const resolveUrl = useCallback(async (url, type) => {
+    if (!url || type === 'visit_link') {
+      setResolved(null);
+      return;
+    }
+    // Check if it looks like a Telegram URL or username
+    const isTg = url.includes('t.me/') || /^@?[a-zA-Z0-9_]{3,}$/.test(url);
+    if (!isTg) {
+      setResolved(null);
+      return;
+    }
+
+    setResolving(true);
+    try {
+      const data = await api.resolveAdUrl(url, type);
+      setResolved(data);
+      if (data.success) {
+        setForm(f => ({
+          ...f,
+          title: data.title || f.title,
+          description: data.description || f.description,
+          image_url: data.image_url,
+        }));
+      }
+    } catch (err) {
+      console.error('Resolve error:', err);
+    } finally {
+      setResolving(false);
+    }
+  }, []);
+
+  // Debounced URL resolution
+  const handleUrlChange = (newUrl) => {
+    setForm(f => ({ ...f, url: newUrl }));
+    setResolved(null);
+    if (resolveTimer.current) clearTimeout(resolveTimer.current);
+    resolveTimer.current = setTimeout(() => {
+      resolveUrl(newUrl, form.type);
+    }, 800);
+  };
+
+  const handleTypeChange = (newType) => {
+    setForm(f => ({ ...f, type: newType, image_url: null }));
+    setResolved(null);
+    if (form.url && newType !== 'visit_link') {
+      resolveUrl(form.url, newType);
+    }
+  };
 
   const handleDeposit = async () => {
     if (depositing || depositAmount <= 0) return;
@@ -81,7 +138,8 @@ export default function AdvertiserPage({ user }) {
       const res = await api.createAdTask(form);
       setBalance(res.ad_balance);
       setTasks(prev => [res.task, ...prev]);
-      setForm({ title: '', description: '', url: '', type: 'subscribe_channel', reward: 10, max_completions: 100 });
+      setForm({ title: '', description: '', url: '', type: 'subscribe_channel', reward: 10, max_completions: 100, image_url: null });
+      setResolved(null);
       setTab('tasks');
       hapticFeedback('success');
     } catch (err) {
@@ -117,7 +175,6 @@ export default function AdvertiserPage({ user }) {
   };
 
   const totalCost = form.reward * form.max_completions;
-  const typeInfo = TASK_TYPES.find(t => t.value === form.type);
 
   if (loading) return <Loader text="Загрузка..." />;
 
@@ -147,7 +204,7 @@ export default function AdvertiserPage({ user }) {
           ➕ Создать
         </button>
         <button className={`adv-tab ${tab === 'stats' ? 'active' : ''}`} onClick={() => { hapticFeedback('light'); setTab('stats'); }}>
-          📊 Статистика
+          📊 Стат
         </button>
       </div>
 
@@ -169,7 +226,11 @@ export default function AdvertiserPage({ user }) {
                   return (
                     <div key={task.id} className="adv-task-item">
                       <div className="adv-task-top">
-                        <span className="adv-task-type-icon">{taskType?.icon || '📋'}</span>
+                        {task.image_url ? (
+                          <img src={task.image_url} alt="" className="adv-task-avatar" />
+                        ) : (
+                          <span className="adv-task-type-icon">{taskType?.icon || '📋'}</span>
+                        )}
                         <div className="adv-task-info">
                           <div className="adv-task-title">{task.title}</div>
                           <div className="adv-task-meta">
@@ -186,22 +247,16 @@ export default function AdvertiserPage({ user }) {
                           <div className="adv-task-progress-fill" style={{ width: `${Math.min(progress, 100)}%` }} />
                         </div>
                         <div className="adv-task-progress-text">
-                          <span>{task.current_completions} / {task.max_completions} выполнений</span>
+                          <span>{task.current_completions} / {task.max_completions}</span>
                           <span>−{spent.toLocaleString()} pts</span>
                         </div>
                       </div>
                       {task.status !== 'completed' && (
                         <div className="adv-task-actions">
-                          <button 
-                            className="btn btn-sm btn-outline"
-                            onClick={() => handleToggle(task)}
-                          >
+                          <button className="btn btn-sm btn-outline" onClick={() => handleToggle(task)}>
                             {task.status === 'active' ? '⏸ Пауза' : '▶️ Возобновить'}
                           </button>
-                          <button 
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(task)}
-                          >
+                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(task)}>
                             🗑 Удалить
                           </button>
                         </div>
@@ -217,8 +272,63 @@ export default function AdvertiserPage({ user }) {
         {tab === 'create' && (
           <div className="card">
             <form className="adv-create-form" onSubmit={handleCreate}>
+
+              {/* Type selector */}
               <div className="adv-form-group">
-                <label className="adv-form-label">Название</label>
+                <label className="adv-form-label">Тип задания</label>
+                <select className="input" value={form.type} onChange={e => handleTypeChange(e.target.value)}>
+                  {TASK_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* URL */}
+              <div className="adv-form-group">
+                <label className="adv-form-label">
+                  {form.type === 'visit_link' ? 'URL ссылки' : 'Telegram ссылка'}
+                </label>
+                <input
+                  className="input"
+                  placeholder={form.type === 'visit_link' ? 'https://example.com' : 'https://t.me/yourchannel'}
+                  value={form.url}
+                  onChange={e => handleUrlChange(e.target.value)}
+                  required
+                />
+                {resolving && (
+                  <div className="adv-resolve-status">⏳ Загрузка информации...</div>
+                )}
+              </div>
+
+              {/* Resolved preview */}
+              {resolved && resolved.success && form.type !== 'visit_link' && (
+                <div className="adv-resolved-preview">
+                  {resolved.image_url && (
+                    <img src={resolved.image_url} alt="" className="adv-resolved-img" />
+                  )}
+                  <div className="adv-resolved-info">
+                    <div className="adv-resolved-title">{resolved.title}</div>
+                    {resolved.members_count && (
+                      <div className="adv-resolved-meta">
+                        👥 {resolved.members_count.toLocaleString()} подписчиков
+                      </div>
+                    )}
+                    {resolved.description && (
+                      <div className="adv-resolved-desc">{resolved.description.substring(0, 100)}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {resolved && !resolved.success && (
+                <div className="adv-resolve-error">
+                  ⚠️ {resolved.error || 'Не удалось получить информацию'}
+                </div>
+              )}
+
+              {/* Title (auto-filled or manual) */}
+              <div className="adv-form-group">
+                <label className="adv-form-label">Название задания</label>
                 <input
                   className="input"
                   placeholder="Подписаться на канал..."
@@ -228,6 +338,7 @@ export default function AdvertiserPage({ user }) {
                 />
               </div>
 
+              {/* Description */}
               <div className="adv-form-group">
                 <label className="adv-form-label">Описание (необязательно)</label>
                 <input
@@ -238,61 +349,42 @@ export default function AdvertiserPage({ user }) {
                 />
               </div>
 
+              {/* Fixed reward selector */}
               <div className="adv-form-group">
-                <label className="adv-form-label">Тип задания</label>
-                <select
-                  className="input"
-                  value={form.type}
-                  onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                >
-                  {TASK_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                <label className="adv-form-label">Награда за выполнение (фиксированная)</label>
+                <div className="adv-reward-grid">
+                  {FIXED_REWARDS.map(r => (
+                    <button
+                      type="button"
+                      key={r}
+                      className={`adv-reward-btn ${form.reward === r ? 'active' : ''}`}
+                      onClick={() => { hapticFeedback('light'); setForm(f => ({ ...f, reward: r })); }}
+                    >
+                      {r} pts
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
 
+              {/* Max completions */}
               <div className="adv-form-group">
-                <label className="adv-form-label">URL / Ссылка</label>
+                <label className="adv-form-label">Количество выполнений</label>
                 <input
                   className="input"
-                  placeholder="https://t.me/yourchannel"
-                  value={form.url}
-                  onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
+                  type="number"
+                  min="1"
+                  max="100000"
+                  value={form.max_completions}
+                  onChange={e => setForm(f => ({ ...f, max_completions: Math.max(1, parseInt(e.target.value) || 1) }))}
                   required
                 />
               </div>
 
-              <div className="adv-form-row">
-                <div className="adv-form-group">
-                  <label className="adv-form-label">Награда (pts)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="1"
-                    max="10000"
-                    value={form.reward}
-                    onChange={e => setForm(f => ({ ...f, reward: Math.max(1, parseInt(e.target.value) || 1) }))}
-                    required
-                  />
-                </div>
-                <div className="adv-form-group">
-                  <label className="adv-form-label">Макс. выполнений</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="1"
-                    max="100000"
-                    value={form.max_completions}
-                    onChange={e => setForm(f => ({ ...f, max_completions: Math.max(1, parseInt(e.target.value) || 1) }))}
-                    required
-                  />
-                </div>
-              </div>
-
+              {/* Cost preview */}
               <div className="adv-cost-preview">
                 <div className="adv-cost-preview-value">{totalCost.toLocaleString()} pts</div>
                 <div className="adv-cost-preview-label">
-                  Стоимость = {form.reward} × {form.max_completions}
+                  {form.reward} pts × {form.max_completions} выполнений
                   {totalCost > balance && <span style={{ color: '#ff3b30', marginLeft: 8 }}>⚠ Недостаточно средств</span>}
                 </div>
               </div>
