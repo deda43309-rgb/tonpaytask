@@ -17,7 +17,8 @@ export default function AdvertiserPage({ user }) {
   const [tab, setTab] = useState('tasks');
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(0);
-  const [fixedReward, setFixedReward] = useState(20);
+  const [adPrice, setAdPrice] = useState(20);
+  const [userReward, setUserReward] = useState(10);
   const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState(null);
   const [showDeposit, setShowDeposit] = useState(false);
@@ -52,7 +53,8 @@ export default function AdvertiserPage({ user }) {
       setBalance(balRes.ad_balance);
       setTasks(tasksRes.tasks);
       setStats(statsRes);
-      setFixedReward(rewardRes.reward);
+      setAdPrice(rewardRes.ad_price);
+      setUserReward(rewardRes.ad_user_reward);
     } catch (err) {
       console.error('Load advertiser data error:', err);
     } finally {
@@ -174,7 +176,7 @@ export default function AdvertiserPage({ user }) {
     }
   };
 
-  const totalCost = fixedReward * form.max_completions;
+  const totalCost = adPrice * form.max_completions;
 
   if (loading) return <Loader text="Загрузка..." />;
 
@@ -351,10 +353,10 @@ export default function AdvertiserPage({ user }) {
 
               {/* Fixed reward info */}
               <div className="adv-form-group">
-                <label className="adv-form-label">Награда за выполнение</label>
+                <label className="adv-form-label">Цена за 1 выполнение</label>
                 <div className="adv-fixed-reward-info">
-                  <span className="adv-fixed-reward-value">{fixedReward} pts</span>
-                  <span className="adv-fixed-reward-note">фиксированная цена</span>
+                  <span className="adv-fixed-reward-value">{adPrice} pts</span>
+                  <span className="adv-fixed-reward-note">исполнитель получит {userReward} pts</span>
                 </div>
               </div>
 
@@ -376,7 +378,7 @@ export default function AdvertiserPage({ user }) {
               <div className="adv-cost-preview">
                 <div className="adv-cost-preview-value">{totalCost.toLocaleString()} pts</div>
                 <div className="adv-cost-preview-label">
-                  {fixedReward} pts × {form.max_completions} выполнений
+                  {adPrice} pts × {form.max_completions} выполнений
                   {totalCost > balance && <span style={{ color: '#ff3b30', marginLeft: 8 }}>⚠ Недостаточно средств</span>}
                 </div>
               </div>

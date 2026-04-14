@@ -63,13 +63,20 @@ router.post('/resolve-url', async (req, res) => {
 
 /**
  * GET /api/advertiser/reward-price
- * Получить фиксированную цену за выполнение
+ * Получить все цены за выполнение
  */
 router.get('/reward-price', (req, res) => {
   try {
     const db = getDb();
-    const row = db.prepare("SELECT value FROM settings WHERE key = 'ad_task_reward'").get();
-    res.json({ reward: parseInt(row?.value || '20') });
+    const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('ad_price','ad_user_reward','ad_ref_reward','ad_commission')").all();
+    const s = {};
+    rows.forEach(r => { s[r.key] = parseInt(r.value); });
+    res.json({
+      ad_price: s.ad_price || 20,
+      ad_user_reward: s.ad_user_reward || 10,
+      ad_ref_reward: s.ad_ref_reward || 2,
+      ad_commission: s.ad_commission || 8,
+    });
   } catch (error) {
     console.error('Get reward price error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -160,9 +167,12 @@ router.post('/tasks', (req, res) => {
     const userId = req.telegramUser.id;
     const { title, description, url, type, max_completions, image_url } = req.body;
 
-    // Get fixed reward from settings
-    const rewardRow = db.prepare("SELECT value FROM settings WHERE key = 'ad_task_reward'").get();
-    const reward = parseInt(rewardRow?.value || '20');
+    // Get pricing from settings
+    const pricingRows = db.prepare("SELECT key, value FROM settings WHERE key IN ('ad_price','ad_user_reward')").all();
+    const ps = {};
+    pricingRows.forEach(r => { ps[r.key] = parseInt(r.value); });
+    const adPrice = ps.ad_price || 20;
+    const reward = ps.ad_user_reward || 10;
 
     // Validation
     if (!title || !url || !type || !max_completions) {
@@ -178,7 +188,7 @@ router.post('/tasks', (req, res) => {
       return res.status(400).json({ error: 'Max completions must be 1–100,000' });
     }
 
-    const totalCost = reward * max_completions;
+    const totalCost = adPrice * max_completions;
 
     const createTask = db.transaction(() => {
       // Check balance

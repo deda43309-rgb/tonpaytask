@@ -218,15 +218,16 @@ router.get('/settings', (req, res) => {
 router.put('/settings', (req, res) => {
   try {
     const db = getDb();
-    const { ad_task_reward } = req.body;
+    const fields = ['ad_price', 'ad_user_reward', 'ad_ref_reward', 'ad_commission'];
 
-    if (ad_task_reward !== undefined) {
-      const val = parseInt(ad_task_reward);
-      if (val < 1 || val > 100000) {
-        return res.status(400).json({ error: 'ad_task_reward must be 1–100,000' });
+    fields.forEach(key => {
+      if (req.body[key] !== undefined) {
+        const val = parseInt(req.body[key]);
+        if (val >= 0 && val <= 1000000) {
+          db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)").run(key, String(val));
+        }
       }
-      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('ad_task_reward', ?)").run(String(val));
-    }
+    });
 
     const rows = db.prepare('SELECT * FROM settings').all();
     const settings = {};

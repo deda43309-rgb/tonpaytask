@@ -186,12 +186,19 @@ router.post('/:id/complete-ad', async (req, res) => {
       return res.status(400).json({ error: 'Task verification failed. Please complete the task first.' });
     }
 
+    // Get pricing settings
+    const pricingRows = db.prepare("SELECT key, value FROM settings WHERE key IN ('ad_user_reward','ad_ref_reward')").all();
+    const ps = {};
+    pricingRows.forEach(r => { ps[r.key] = parseInt(r.value); });
+    const userReward = ps.ad_user_reward || 10;
+    const refReward = ps.ad_ref_reward || 2;
+
     // Complete the ad task (transaction)
     const completeAdTask = db.transaction(() => {
       // Add completion
       db.prepare('INSERT INTO ad_task_completions (task_id, user_id) VALUES (?, ?)').run(taskId, userId);
 
-      // Credit user balance
+      // Credit user balance (ad_user_reward)
       db.prepare(`
         UPDATE users SET 
           balance = balance + ?,
@@ -199,7 +206,19 @@ router.post('/:id/complete-ad', async (req, res) => {
           tasks_completed = tasks_completed + 1,
           updated_at = datetime('now')
         WHERE id = ?
-      `).run(task.reward, task.reward, userId);
+      `).run(userReward, userReward, userId);
+
+      // Credit referrer bonus (ad_ref_reward)
+      const executor = db.prepare('SELECT referred_by FROM users WHERE id = ?').get(userId);
+      if (executor && executor.referred_by && refReward > 0) {
+        db.prepare(`
+          UPDATE users SET 
+            balance = balance + ?,
+            total_earned = total_earned + ?,
+            updated_at = datetime('now')
+          WHERE id = ?
+        `).run(refReward, refReward, executor.referred_by);
+      }
 
       // Update ad task completion count
       db.prepare('UPDATE ad_tasks SET current_completions = current_completions + 1 WHERE id = ?').run(taskId);
@@ -217,7 +236,7 @@ router.post('/:id/complete-ad', async (req, res) => {
 
     res.json({
       success: true,
-      reward: task.reward,
+      reward: userReward,
       balance: updatedUser.balance,
       total_earned: updatedUser.total_earned,
       tasks_completed: updatedUser.tasks_completed,

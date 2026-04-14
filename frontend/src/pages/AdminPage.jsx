@@ -295,21 +295,60 @@ export default function AdminPage({ user }) {
           {tab === 'settings' && (
             <div className="admin-settings stagger">
               <div className="card" style={{ padding: 20 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📢 Рекламные задания</h3>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📢 Ценообразование рекламных заданий</h3>
+                
                 <div className="form-group">
-                  <label className="form-label">Фиксированная награда за выполнение (Points)</label>
+                  <label className="form-label">💰 Цена для рекламодателя (за 1 выполнение)</label>
                   <input
                     className="input"
                     type="number"
                     min="1"
-                    max="100000"
-                    value={settings.ad_task_reward || 20}
-                    onChange={e => setSettings(s => ({ ...s, ad_task_reward: e.target.value }))}
+                    value={settings.ad_price || 20}
+                    onChange={e => setSettings(s => ({ ...s, ad_price: e.target.value }))}
                   />
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-                    Эта цена будет одинаковой для всех рекламных заданий
-                  </div>
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label">🎯 Награда исполнителю</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    value={settings.ad_user_reward || 10}
+                    onChange={e => setSettings(s => ({ ...s, ad_user_reward: e.target.value }))}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">👥 Реферальная награда</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    value={settings.ad_ref_reward || 2}
+                    onChange={e => setSettings(s => ({ ...s, ad_ref_reward: e.target.value }))}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">🏦 Комиссия системы</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    value={settings.ad_commission || 8}
+                    onChange={e => setSettings(s => ({ ...s, ad_commission: e.target.value }))}
+                  />
+                </div>
+
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px 0', borderTop: '1px solid var(--border)', marginTop: 8 }}>
+                  📊 Итого: {parseInt(settings.ad_user_reward || 10) + parseInt(settings.ad_ref_reward || 2) + parseInt(settings.ad_commission || 8)} pts
+                  {' '}из {settings.ad_price || 20} pts
+                  {parseInt(settings.ad_user_reward || 10) + parseInt(settings.ad_ref_reward || 2) + parseInt(settings.ad_commission || 8) !== parseInt(settings.ad_price || 20) && (
+                    <span style={{ color: '#ff3b30', fontWeight: 700 }}> ⚠ Суммы не совпадают!</span>
+                  )}
+                </div>
+
                 <button
                   className="btn btn-primary mt-16"
                   style={{ width: '100%' }}
@@ -317,7 +356,12 @@ export default function AdminPage({ user }) {
                   onClick={async () => {
                     setSavingSettings(true);
                     try {
-                      const res = await api.updateAdminSettings({ ad_task_reward: settings.ad_task_reward });
+                      const res = await api.updateAdminSettings({
+                        ad_price: settings.ad_price,
+                        ad_user_reward: settings.ad_user_reward,
+                        ad_ref_reward: settings.ad_ref_reward,
+                        ad_commission: settings.ad_commission,
+                      });
                       setSettings(res.settings);
                       showToastMsg('Настройки сохранены ✅');
                       hapticFeedback('success');

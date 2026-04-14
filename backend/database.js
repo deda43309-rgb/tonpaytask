@@ -268,8 +268,11 @@ function initTables() {
       value TEXT NOT NULL
     );
   `);
-  // Default ad task reward
-  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_task_reward', '20'); } catch(e) {}
+  // Default ad pricing settings
+  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_price', '20'); } catch(e) {}
+  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_user_reward', '10'); } catch(e) {}
+  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_ref_reward', '2'); } catch(e) {}
+  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_commission', '8'); } catch(e) {}
 
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_user ON task_completions(user_id)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_task ON task_completions(task_id)'); } catch(e) {}
