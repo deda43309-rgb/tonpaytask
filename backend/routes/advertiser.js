@@ -338,5 +338,46 @@ router.get('/stats', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+/**
+ * DELETE /api/advertiser/tasks/:id
+ * Удалить рекламное задание + вернуть баланс за неиспользованные выполнения
+ */
+router.delete('/tasks/:id', async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.telegramUser.id;
+    const taskId = parseInt(req.params.id);
+
+    const task = await db.get('SELECT * FROM ad_tasks WHERE id = ? AND advertiser_id = ?', taskId, userId);
+    if (!task) {
+      return res.status(404).json({ error: 'Задание не найдено' });
+    }
+
+    // Calculate refund: remaining completions × ad_price
+    const remaining = task.max_completions - task.current_completions;
+    let refund = 0;
+
+    if (remaining > 0) {
+      const priceRow = await db.get("SELECT value FROM settings WHERE key = 'ad_price'");
+      const adPrice = parseInt(priceRow?.value) || 20;
+      refund = remaining * adPrice;
+
+      await db.run(
+        'UPDATE users SET ad_balance = ad_balance + ? WHERE id = ?',
+        refund, userId
+      );
+    }
+
+    // Mark as deleted
+    await db.run("UPDATE ad_tasks SET status = 'deleted' WHERE id = ?", taskId);
+
+    const user = await db.get('SELECT ad_balance FROM users WHERE id = ?', userId);
+
+    res.json({ success: true, refund, ad_balance: user.ad_balance });
+  } catch (error) {
+    console.error('Delete ad task error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 module.exports = router;
