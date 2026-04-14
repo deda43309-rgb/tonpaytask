@@ -61,3 +61,30 @@ export const deleteTask = (id) =>
   request(`/admin/tasks/${id}`, { method: 'DELETE' });
 export const getAdminUsers = (page = 1) =>
   request(`/admin/users?page=${page}`);
+
+// Ad Tasks (complete from tasks feed)
+export const completeAdTask = (id) =>
+  request(`/tasks/${id}/complete-ad`, { method: 'POST' });
+
+// Advertiser
+export const getAdBalance = () => request('/advertiser/balance');
+export const adDeposit = (amount) =>
+  request('/advertiser/deposit', {
+    method: 'POST',
+    body: JSON.stringify({ amount }),
+  });
+export const getAdTasks = () => request('/advertiser/tasks');
+export const getAdStats = () => request('/advertiser/stats');
+export const createAdTask = (data) =>
+  request('/advertiser/tasks', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+export const updateAdTask = (id, data) =>
+  request(`/advertiser/tasks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+export const deleteAdTask = (id) =>
+  request(`/advertiser/tasks/${id}`, { method: 'DELETE' });
+

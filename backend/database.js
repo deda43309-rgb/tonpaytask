@@ -219,12 +219,54 @@ function initTables() {
       claimed_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
+
+    CREATE TABLE IF NOT EXISTS ad_tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      advertiser_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      url TEXT NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('subscribe_channel', 'start_bot', 'visit_link')),
+      reward INTEGER NOT NULL DEFAULT 0,
+      max_completions INTEGER NOT NULL DEFAULT 100,
+      current_completions INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'active' CHECK(status IN ('active', 'paused', 'completed', 'deleted')),
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (advertiser_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS ad_task_completions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      completed_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (task_id) REFERENCES ad_tasks(id),
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      UNIQUE(user_id, task_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS ad_deposits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      amount INTEGER NOT NULL,
+      method TEXT DEFAULT 'manual',
+      status TEXT DEFAULT 'completed',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    );
   `);
+
+  // Add ad_balance column to users if not exists
+  try { db.exec('ALTER TABLE users ADD COLUMN ad_balance INTEGER DEFAULT 0'); } catch(e) {}
 
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_user ON task_completions(user_id)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_task ON task_completions(task_id)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_daily_bonuses_user ON daily_bonuses(user_id)'); } catch(e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_tasks_advertiser ON ad_tasks(advertiser_id)'); } catch(e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_task_completions_user ON ad_task_completions(user_id)'); } catch(e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_task_completions_task ON ad_task_completions(task_id)'); } catch(e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_deposits_user ON ad_deposits(user_id)'); } catch(e) {}
 
   console.log('✅ Database tables initialized');
 }

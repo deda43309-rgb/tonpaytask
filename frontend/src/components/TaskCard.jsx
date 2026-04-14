@@ -42,7 +42,7 @@ export default function TaskCard({ task, onComplete }) {
     setLoading(true);
     hapticFeedback('medium');
     try {
-      await onComplete(task.id);
+      await onComplete(task.id, task.is_ad);
       hapticFeedback('success');
     } catch (err) {
       hapticFeedback('error');
@@ -64,6 +64,7 @@ export default function TaskCard({ task, onComplete }) {
           )}
           <div className="task-card-meta">
             <span className={`badge badge-${typeInfo.color}`}>{typeInfo.label}</span>
+            {task.is_ad ? <span className="badge" style={{ background: 'rgba(245,166,35,0.15)', color: '#f5a623' }}>📢 Реклама</span> : null}
           </div>
         </div>
         <div className="task-card-reward">

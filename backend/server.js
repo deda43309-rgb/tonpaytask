@@ -27,6 +27,7 @@ app.use('/api/auth', authMiddleware, require('./routes/auth'));
 app.use('/api/tasks', authMiddleware, require('./routes/tasks'));
 app.use('/api/users', authMiddleware, require('./routes/users'));
 app.use('/api/admin', authMiddleware, require('./routes/admin'));
+app.use('/api/advertiser', authMiddleware, require('./routes/advertiser'));
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {

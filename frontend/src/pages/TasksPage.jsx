@@ -32,14 +32,18 @@ export default function TasksPage({ onUserUpdate }) {
     }
   };
 
-  const handleComplete = async (taskId) => {
+  const handleComplete = async (taskId, isAd) => {
     try {
-      const result = await api.completeTask(taskId);
+      const result = isAd
+        ? await api.completeAdTask(taskId)
+        : await api.completeTask(taskId);
       
       // Update task in list
-      setTasks(prev => prev.map(t => 
-        t.id === taskId ? { ...t, is_completed: 1 } : t
-      ));
+      const key = isAd ? `ad-${taskId}` : `${taskId}`;
+      setTasks(prev => prev.map(t => {
+        const tKey = t.is_ad ? `ad-${t.id}` : `${t.id}`;
+        return tKey === key ? { ...t, is_completed: 1 } : t;
+      }));
 
       // Show reward toast
       showToast(`+${result.reward} Points! 🎉`, 'success');
@@ -98,7 +102,7 @@ export default function TasksPage({ onUserUpdate }) {
       {activeTasks.length > 0 ? (
         <div className="tasks-list stagger">
           {activeTasks.map(task => (
-            <TaskCard key={task.id} task={task} onComplete={handleComplete} />
+            <TaskCard key={task.is_ad ? `ad-${task.id}` : task.id} task={task} onComplete={handleComplete} />
           ))}
         </div>
       ) : (
@@ -117,7 +121,7 @@ export default function TasksPage({ onUserUpdate }) {
           </h2>
           <div className="tasks-list mt-12 stagger">
             {completedTasks.map(task => (
-              <TaskCard key={task.id} task={task} onComplete={handleComplete} />
+              <TaskCard key={task.is_ad ? `ad-${task.id}` : task.id} task={task} onComplete={handleComplete} />
             ))}
           </div>
         </div>

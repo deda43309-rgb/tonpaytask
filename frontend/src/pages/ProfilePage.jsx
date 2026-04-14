@@ -101,6 +101,18 @@ export default function ProfilePage({ user }) {
             <span className="profile-menu-arrow">›</span>
           </button>
 
+          <div className="profile-menu-divider" />
+
+          <button
+            className="profile-menu-item"
+            onClick={() => { hapticFeedback('light'); navigate('/advertiser'); }}
+            id="menu-advertiser"
+          >
+            <span className="profile-menu-icon">📢</span>
+            <span className="profile-menu-label">Рекламодатель</span>
+            <span className="profile-menu-arrow">›</span>
+          </button>
+
           {user?.is_admin ? (
             <>
               <div className="profile-menu-divider" />

@@ -8,6 +8,7 @@ import TasksPage from './pages/TasksPage';
 import ReferralPage from './pages/ReferralPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
+import AdvertiserPage from './pages/AdvertiserPage';
 import { getStartParam, expandApp, setHeaderColor, setBackgroundColor, getInitData } from './utils/telegram';
 import * as api from './utils/api';
 
@@ -88,6 +89,7 @@ export default function App() {
           <Route path="/referral" element={<ReferralPage user={user} />} />
           <Route path="/profile" element={<ProfilePage user={user} />} />
           <Route path="/admin" element={<AdminPage user={user} />} />
+          <Route path="/advertiser" element={<AdvertiserPage user={user} />} />
         </Routes>
       </ErrorBoundary>
       <BottomNav />
