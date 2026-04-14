@@ -79,7 +79,7 @@ router.post('/tasks', async (req, res) => {
     const totalCost = taskReward * parseInt(max_completions);
 
     // Check system balance
-    const balRow = await db.get("SELECT value FROM settings WHERE key = 'system_balance'");
+    const balRow = await db.get("SELECT value FROM settings WHERE key = 'admin_balance'");
     const systemBalance = parseInt(balRow?.value) || 0;
 
     if (totalCost > systemBalance) {
@@ -87,7 +87,7 @@ router.post('/tasks', async (req, res) => {
     }
 
     // Deduct from system balance
-    await db.run("UPDATE settings SET value = ? WHERE key = 'system_balance'", String(systemBalance - totalCost));
+    await db.run("UPDATE settings SET value = ? WHERE key = 'admin_balance'", String(systemBalance - totalCost));
 
     const result = await db.get(`
       INSERT INTO tasks (type, title, description, reward, target_url, target_id, icon, sort_order, max_completions, image_url)
@@ -106,7 +106,7 @@ router.post('/tasks', async (req, res) => {
       image_url || null
     );
 
-    res.json({ task: result, system_balance: systemBalance - totalCost });
+    res.json({ task: result, admin_balance: systemBalance - totalCost });
   } catch (error) {
     console.error('Admin create task error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -173,7 +173,7 @@ router.delete('/tasks/:id', async (req, res) => {
       if (remaining > 0) {
         const refund = remaining * (task.reward || 0);
         await db.run(
-          "UPDATE settings SET value = CAST(CAST(value AS INTEGER) + ? AS TEXT) WHERE key = 'system_balance'",
+          "UPDATE settings SET value = CAST(CAST(value AS INTEGER) + ? AS TEXT) WHERE key = 'admin_balance'",
           refund
         );
       }

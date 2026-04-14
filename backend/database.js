@@ -302,7 +302,6 @@ async function initTables() {
     ['ad_ref_reward', '2'],
     ['ad_commission', '8'],
     ['admin_balance', '0'],
-    ['system_balance', '100000'],
   ];
   for (const [key, value] of defaults) {
     try {

@@ -424,8 +424,8 @@ export default function AdminPage({ user }) {
                   <input
                     className="input"
                     type="number"
-                    value={settings.system_balance || 0}
-                    onChange={e => setSettings({ ...settings, system_balance: e.target.value })}
+                    value={settings.admin_balance || 0}
+                    onChange={e => setSettings({ ...settings, admin_balance: e.target.value })}
                   />
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
                     Из этого баланса списывается стоимость заданий (reward × кол-во)
@@ -500,7 +500,7 @@ export default function AdminPage({ user }) {
                         ad_user_reward: settings.ad_user_reward,
                         ad_ref_reward: settings.ad_ref_reward,
                         ad_commission: settings.ad_commission,
-                        system_balance: settings.system_balance,
+                        admin_balance: settings.admin_balance,
                       });
                       setSettings(res.settings);
                       showToastMsg('Настройки сохранены ✅');
