@@ -7,18 +7,18 @@ const router = express.Router();
  * GET /api/users/me
  * Профиль текущего пользователя
  */
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
 
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     // Get referral count
-    const refCount = db.prepare('SELECT COUNT(*) as count FROM referrals WHERE referrer_id = ?').get(userId);
+    const refCount = await db.get('SELECT COUNT(*) as count FROM referrals WHERE referrer_id = ?', userId);
 
     // Check admin
     const adminIds = (process.env.ADMIN_IDS || '')
@@ -37,7 +37,7 @@ router.get('/me', (req, res) => {
         referral_code: user.referral_code,
         total_earned: user.total_earned,
         tasks_completed: user.tasks_completed,
-        referral_count: refCount.count,
+        referral_count: parseInt(refCount.count),
         is_admin: adminIds.includes(user.id) || user.is_admin ? 1 : 0,
         created_at: user.created_at,
       }
@@ -52,27 +52,31 @@ router.get('/me', (req, res) => {
  * POST /api/users/daily-bonus
  * Получить ежедневный бонус
  */
-router.post('/daily-bonus', (req, res) => {
+router.post('/daily-bonus', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
 
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     // Check if already claimed today
     const today = new Date().toISOString().split('T')[0];
-    if (user.last_daily_bonus && user.last_daily_bonus.startsWith(today)) {
-      return res.status(400).json({ error: 'Daily bonus already claimed today' });
+    if (user.last_daily_bonus) {
+      const lastBonusDate = new Date(user.last_daily_bonus).toISOString().split('T')[0];
+      if (lastBonusDate === today) {
+        return res.status(400).json({ error: 'Daily bonus already claimed today' });
+      }
     }
 
     // Calculate streak
     let streak = 1;
-    const lastBonus = db.prepare(
-      'SELECT streak, claimed_at FROM daily_bonuses WHERE user_id = ? ORDER BY claimed_at DESC LIMIT 1'
-    ).get(userId);
+    const lastBonus = await db.get(
+      'SELECT streak, claimed_at FROM daily_bonuses WHERE user_id = ? ORDER BY claimed_at DESC LIMIT 1',
+      userId
+    );
 
     if (lastBonus) {
       const lastDate = new Date(lastBonus.claimed_at);
@@ -88,25 +92,24 @@ router.post('/daily-bonus', (req, res) => {
     const bonus = baseBonus * streak; // Streak multiplier
 
     // Claim bonus (transaction)
-    const claim = db.transaction(() => {
-      db.prepare(`
-        UPDATE users SET 
+    const result = await db.transaction(async (tx) => {
+      await tx.run(
+        `UPDATE users SET 
           balance = balance + ?,
           total_earned = total_earned + ?,
-          last_daily_bonus = datetime('now'),
-          updated_at = datetime('now')
-        WHERE id = ?
-      `).run(bonus, bonus, userId);
+          last_daily_bonus = NOW(),
+          updated_at = NOW()
+        WHERE id = ?`,
+        bonus, bonus, userId
+      );
 
-      db.prepare(`
-        INSERT INTO daily_bonuses (user_id, amount, streak)
-        VALUES (?, ?, ?)
-      `).run(userId, bonus, streak);
+      await tx.run(
+        'INSERT INTO daily_bonuses (user_id, amount, streak) VALUES (?, ?, ?)',
+        userId, bonus, streak
+      );
 
-      return db.prepare('SELECT balance FROM users WHERE id = ?').get(userId);
+      return await tx.get('SELECT balance FROM users WHERE id = ?', userId);
     });
-
-    const result = claim();
 
     res.json({
       success: true,
@@ -124,29 +127,31 @@ router.post('/daily-bonus', (req, res) => {
  * GET /api/users/referrals
  * Список рефералов пользователя
  */
-router.get('/referrals', (req, res) => {
+router.get('/referrals', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
 
-    const user = db.prepare('SELECT referral_code FROM users WHERE id = ?').get(userId);
+    const user = await db.get('SELECT referral_code FROM users WHERE id = ?', userId);
     
-    const referrals = db.prepare(`
-      SELECT u.id, u.username, u.first_name, r.bonus, r.created_at
-      FROM referrals r
-      JOIN users u ON u.id = r.referred_id
-      WHERE r.referrer_id = ?
-      ORDER BY r.created_at DESC
-    `).all(userId);
+    const referrals = await db.all(
+      `SELECT u.id, u.username, u.first_name, r.bonus, r.created_at
+       FROM referrals r
+       JOIN users u ON u.id = r.referred_id
+       WHERE r.referrer_id = ?
+       ORDER BY r.created_at DESC`,
+      userId
+    );
 
-    const totalBonus = db.prepare(
-      'SELECT COALESCE(SUM(bonus), 0) as total FROM referrals WHERE referrer_id = ?'
-    ).get(userId);
+    const totalBonus = await db.get(
+      'SELECT COALESCE(SUM(bonus), 0) as total FROM referrals WHERE referrer_id = ?',
+      userId
+    );
 
     res.json({
       referral_code: user.referral_code,
       referrals,
-      total_bonus: totalBonus.total,
+      total_bonus: parseInt(totalBonus.total),
       count: referrals.length,
     });
   } catch (error) {

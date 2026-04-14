@@ -74,7 +74,7 @@ function authMiddleware(req, res, next) {
 /**
  * Admin check middleware
  */
-function adminMiddleware(req, res, next) {
+async function adminMiddleware(req, res, next) {
   const { getDb } = require('../database');
   const db = getDb();
 
@@ -90,7 +90,7 @@ function adminMiddleware(req, res, next) {
     .filter(Boolean);
 
   // Check DB or env
-  const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(userId);
+  const user = await db.get('SELECT is_admin FROM users WHERE id = ?', userId);
   
   if (adminIds.includes(userId) || user?.is_admin) {
     return next();

@@ -8,13 +8,13 @@ const router = express.Router();
  * GET /api/tasks
  * Список доступных заданий для пользователя
  */
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
 
     // Regular admin tasks
-    const tasks = db.prepare(`
+    const tasks = await db.all(`
       SELECT t.*, 
         CASE WHEN tc.id IS NOT NULL THEN 1 ELSE 0 END as is_completed,
         0 as is_ad
@@ -22,10 +22,10 @@ router.get('/', (req, res) => {
       LEFT JOIN task_completions tc ON tc.task_id = t.id AND tc.user_id = ?
       WHERE t.is_active = 1
       ORDER BY t.sort_order ASC, t.created_at DESC
-    `).all(userId);
+    `, userId);
 
     // Advertiser tasks (active, not own, not completed, not maxed out)
-    const adTasks = db.prepare(`
+    const adTasks = await db.all(`
       SELECT at2.id, at2.type, at2.title, at2.description, at2.reward, 
         at2.url as target_url, at2.url as target_id,
         '📢' as icon, 999 as sort_order, 1 as is_active,
@@ -39,7 +39,7 @@ router.get('/', (req, res) => {
         AND at2.advertiser_id != ?
         AND at2.current_completions < at2.max_completions
       ORDER BY at2.created_at DESC
-    `).all(userId, userId);
+    `, userId, userId);
 
     res.json({ tasks: [...tasks, ...adTasks] });
   } catch (error) {
@@ -52,19 +52,19 @@ router.get('/', (req, res) => {
  * GET /api/tasks/:id
  * Одно задание
  */
-router.get('/:id', (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
     const taskId = parseInt(req.params.id);
 
-    const task = db.prepare(`
+    const task = await db.get(`
       SELECT t.*, 
         CASE WHEN tc.id IS NOT NULL THEN 1 ELSE 0 END as is_completed
       FROM tasks t
       LEFT JOIN task_completions tc ON tc.task_id = t.id AND tc.user_id = ?
       WHERE t.id = ?
-    `).get(userId, taskId);
+    `, userId, taskId);
 
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
@@ -88,13 +88,13 @@ router.post('/:id/complete', async (req, res) => {
     const taskId = parseInt(req.params.id);
 
     // Check task exists and is active
-    const task = db.prepare('SELECT * FROM tasks WHERE id = ? AND is_active = 1').get(taskId);
+    const task = await db.get('SELECT * FROM tasks WHERE id = ? AND is_active = 1', taskId);
     if (!task) {
       return res.status(404).json({ error: 'Task not found or inactive' });
     }
 
     // Check if already completed
-    const existing = db.prepare('SELECT id FROM task_completions WHERE user_id = ? AND task_id = ?').get(userId, taskId);
+    const existing = await db.get('SELECT id FROM task_completions WHERE user_id = ? AND task_id = ?', userId, taskId);
     if (existing) {
       return res.status(400).json({ error: 'Task already completed' });
     }
@@ -111,31 +111,29 @@ router.post('/:id/complete', async (req, res) => {
     }
 
     // Complete the task (transaction)
-    const completeTask = db.transaction(() => {
+    const updatedUser = await db.transaction(async (tx) => {
       // Add completion
-      db.prepare('INSERT INTO task_completions (user_id, task_id) VALUES (?, ?)').run(userId, taskId);
+      await tx.run('INSERT INTO task_completions (user_id, task_id) VALUES (?, ?)', userId, taskId);
 
       // Update user balance
-      db.prepare(`
+      await tx.run(`
         UPDATE users SET 
           balance = balance + ?,
           total_earned = total_earned + ?,
           tasks_completed = tasks_completed + 1,
-          updated_at = datetime('now')
+          updated_at = NOW()
         WHERE id = ?
-      `).run(task.reward, task.reward, userId);
+      `, task.reward, task.reward, userId);
 
       // Deduct from admin balance
-      db.prepare("UPDATE settings SET value = CAST(CAST(value AS INTEGER) - ? AS TEXT) WHERE key = 'admin_balance'").run(task.reward);
+      await tx.run("UPDATE settings SET value = CAST(CAST(value AS INTEGER) - ? AS TEXT) WHERE key = 'admin_balance'", task.reward);
 
       // Update task completion count
-      db.prepare('UPDATE tasks SET current_completions = current_completions + 1 WHERE id = ?').run(taskId);
+      await tx.run('UPDATE tasks SET current_completions = current_completions + 1 WHERE id = ?', taskId);
 
       // Get updated user
-      return db.prepare('SELECT balance, total_earned, tasks_completed FROM users WHERE id = ?').get(userId);
+      return await tx.get('SELECT balance, total_earned, tasks_completed FROM users WHERE id = ?', userId);
     });
-
-    const updatedUser = completeTask();
 
     res.json({
       success: true,
@@ -161,7 +159,7 @@ router.post('/:id/complete-ad', async (req, res) => {
     const taskId = parseInt(req.params.id);
 
     // Check ad task exists and is active
-    const task = db.prepare("SELECT * FROM ad_tasks WHERE id = ? AND status = 'active'").get(taskId);
+    const task = await db.get("SELECT * FROM ad_tasks WHERE id = ? AND status = 'active'", taskId);
     if (!task) {
       return res.status(404).json({ error: 'Ad task not found or inactive' });
     }
@@ -172,7 +170,7 @@ router.post('/:id/complete-ad', async (req, res) => {
     }
 
     // Check if already completed
-    const existing = db.prepare('SELECT id FROM ad_task_completions WHERE user_id = ? AND task_id = ?').get(userId, taskId);
+    const existing = await db.get('SELECT id FROM ad_task_completions WHERE user_id = ? AND task_id = ?', userId, taskId);
     if (existing) {
       return res.status(400).json({ error: 'Task already completed' });
     }
@@ -190,68 +188,66 @@ router.post('/:id/complete-ad', async (req, res) => {
     }
 
     // Get pricing settings
-    const pricingRows = db.prepare("SELECT key, value FROM settings WHERE key IN ('ad_user_reward','ad_ref_reward')").all();
+    const pricingRows = await db.all("SELECT key, value FROM settings WHERE key IN ('ad_user_reward','ad_ref_reward')");
     const ps = {};
     pricingRows.forEach(r => { ps[r.key] = parseInt(r.value); });
     const userReward = ps.ad_user_reward || 10;
     const refReward = ps.ad_ref_reward || 2;
 
     // Complete the ad task (transaction)
-    const completeAdTask = db.transaction(() => {
+    const updatedUser = await db.transaction(async (tx) => {
       // Add completion
-      db.prepare('INSERT INTO ad_task_completions (task_id, user_id) VALUES (?, ?)').run(taskId, userId);
+      await tx.run('INSERT INTO ad_task_completions (task_id, user_id) VALUES (?, ?)', taskId, userId);
 
       // Credit user balance (ad_user_reward)
-      db.prepare(`
+      await tx.run(`
         UPDATE users SET 
           balance = balance + ?,
           total_earned = total_earned + ?,
           tasks_completed = tasks_completed + 1,
-          updated_at = datetime('now')
+          updated_at = NOW()
         WHERE id = ?
-      `).run(userReward, userReward, userId);
+      `, userReward, userReward, userId);
 
       // Log user reward transaction
-      db.prepare('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)').run(taskId, userId, 'user_reward', userReward);
+      await tx.run('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)', taskId, userId, 'user_reward', userReward);
 
       // Credit referrer bonus (ad_ref_reward)
-      const executor = db.prepare('SELECT referred_by FROM users WHERE id = ?').get(userId);
+      const executor = await tx.get('SELECT referred_by FROM users WHERE id = ?', userId);
       let actualCommission = task.reward - userReward; // everything left is commission
 
       if (executor && executor.referred_by && refReward > 0) {
-        db.prepare(`
+        await tx.run(`
           UPDATE users SET 
             balance = balance + ?,
             total_earned = total_earned + ?,
-            updated_at = datetime('now')
+            updated_at = NOW()
           WHERE id = ?
-        `).run(refReward, refReward, executor.referred_by);
+        `, refReward, refReward, executor.referred_by);
 
         // Log ref reward transaction
-        db.prepare('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)').run(taskId, executor.referred_by, 'ref_reward', refReward);
+        await tx.run('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)', taskId, executor.referred_by, 'ref_reward', refReward);
         actualCommission = task.reward - userReward - refReward;
       }
 
       // Log system commission (includes unclaimed ref reward if no referrer)
       if (actualCommission > 0) {
-        db.prepare('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)').run(taskId, null, 'commission', actualCommission);
+        await tx.run('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)', taskId, null, 'commission', actualCommission);
         // Credit admin balance with commission
-        db.prepare("UPDATE settings SET value = CAST(CAST(value AS INTEGER) + ? AS TEXT) WHERE key = 'admin_balance'").run(actualCommission);
+        await tx.run("UPDATE settings SET value = CAST(CAST(value AS INTEGER) + ? AS TEXT) WHERE key = 'admin_balance'", actualCommission);
       }
 
       // Update ad task completion count
-      db.prepare('UPDATE ad_tasks SET current_completions = current_completions + 1 WHERE id = ?').run(taskId);
+      await tx.run('UPDATE ad_tasks SET current_completions = current_completions + 1 WHERE id = ?', taskId);
 
       // Check if task is now fully completed
-      const updated = db.prepare('SELECT * FROM ad_tasks WHERE id = ?').get(taskId);
+      const updated = await tx.get('SELECT * FROM ad_tasks WHERE id = ?', taskId);
       if (updated.current_completions >= updated.max_completions) {
-        db.prepare("UPDATE ad_tasks SET status = 'completed' WHERE id = ?").run(taskId);
+        await tx.run("UPDATE ad_tasks SET status = 'completed' WHERE id = ?", taskId);
       }
 
-      return db.prepare('SELECT balance, total_earned, tasks_completed FROM users WHERE id = ?').get(userId);
+      return await tx.get('SELECT balance, total_earned, tasks_completed FROM users WHERE id = ?', userId);
     });
-
-    const updatedUser = completeAdTask();
 
     res.json({
       success: true,

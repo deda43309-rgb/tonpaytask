@@ -1,148 +1,141 @@
-const initSqlJs = require('sql.js');
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
-const DB_PATH = path.join(__dirname, 'data', 'tonpaytask.db');
-
-let db;
+let pool;
 
 /**
- * Wrapper class that gives sql.js a better-sqlite3-like API
- * so existing routes don't need to change.
- * 
- * Key: uses prepared statements (prepare/bind/step/free) for ALL writes
- * because sql.js db.run() auto-commits and breaks explicit transactions.
+ * Async wrapper around pg Pool that provides a simple API
+ * similar to the previous sql.js wrapper.
  */
-class DbWrapper {
-  constructor(sqlDb) {
-    this._db = sqlDb;
-    this._inTransaction = false;
+class PgDb {
+  constructor(pgPool) {
+    this._pool = pgPool;
   }
 
-  prepare(sql) {
-    const self = this;
+  /**
+   * Convert SQLite-style ? params to PostgreSQL $1, $2, ...
+   */
+  _convertParams(sql, params) {
+    let idx = 0;
+    const pgSql = sql.replace(/\?/g, () => `$${++idx}`);
+    return pgSql;
+  }
+
+  /**
+   * Get a single row
+   */
+  async get(sql, ...params) {
+    const pgSql = this._convertParams(sql, params);
+    const result = await this._pool.query(pgSql, params);
+    return result.rows[0] || undefined;
+  }
+
+  /**
+   * Get all rows
+   */
+  async all(sql, ...params) {
+    const pgSql = this._convertParams(sql, params);
+    const result = await this._pool.query(pgSql, params);
+    return result.rows;
+  }
+
+  /**
+   * Run a statement (INSERT/UPDATE/DELETE)
+   */
+  async run(sql, ...params) {
+    const pgSql = this._convertParams(sql, params);
+    const result = await this._pool.query(pgSql, params);
     return {
-      run(...params) {
-        const stmt = self._db.prepare(sql);
-        if (params.length > 0) stmt.bind(params);
-        stmt.step();
-        stmt.free();
-        if (!self._inTransaction) {
-          self._save();
-        }
-        return {
-          changes: self._db.getRowsModified(),
-          lastInsertRowid: self._getLastInsertRowid(),
-        };
-      },
-      get(...params) {
-        try {
-          const stmt = self._db.prepare(sql);
-          if (params.length > 0) stmt.bind(params);
-          if (stmt.step()) {
-            const row = stmt.getAsObject();
-            stmt.free();
-            return row;
-          }
-          stmt.free();
-          return undefined;
-        } catch (e) {
-          console.error('DB get error:', sql, e.message);
-          return undefined;
-        }
-      },
-      all(...params) {
-        try {
-          const results = [];
-          const stmt = self._db.prepare(sql);
-          if (params.length > 0) stmt.bind(params);
-          while (stmt.step()) {
-            results.push(stmt.getAsObject());
-          }
-          stmt.free();
-          return results;
-        } catch (e) {
-          console.error('DB all error:', sql, e.message);
-          return [];
-        }
-      },
+      changes: result.rowCount,
+      lastInsertRowid: result.rows?.[0]?.id || null,
     };
   }
 
-  exec(sql) {
-    this._db.exec(sql);
-    if (!this._inTransaction) {
-      this._save();
-    }
+  /**
+   * Execute raw SQL (for CREATE TABLE etc.)
+   */
+  async exec(sql) {
+    await this._pool.query(sql);
   }
 
-  pragma(pragmaStr) {
+  /**
+   * Run a function inside a transaction
+   */
+  async transaction(fn) {
+    const client = await this._pool.connect();
     try {
-      this._db.exec(`PRAGMA ${pragmaStr}`);
+      await client.query('BEGIN');
+      const txDb = new PgTxDb(client);
+      const result = await fn(txDb);
+      await client.query('COMMIT');
+      return result;
     } catch (e) {
-      // Some pragmas may not be supported in sql.js
-    }
-  }
-
-  transaction(fn) {
-    const self = this;
-    return function (...args) {
-      self._inTransaction = true;
-      self._db.exec('BEGIN');
-      try {
-        const result = fn(...args);
-        self._db.exec('COMMIT');
-        self._inTransaction = false;
-        self._save();
-        return result;
-      } catch (e) {
-        self._inTransaction = false;
-        try { self._db.exec('ROLLBACK'); } catch (_) {}
-        throw e;
-      }
-    };
-  }
-
-  _getLastInsertRowid() {
-    const stmt = this._db.prepare('SELECT last_insert_rowid() as id');
-    stmt.step();
-    const row = stmt.getAsObject();
-    stmt.free();
-    return row.id;
-  }
-
-  _save() {
-    try {
-      const data = this._db.export();
-      const buffer = Buffer.from(data);
-      fs.writeFileSync(DB_PATH, buffer);
-    } catch (e) {
-      console.error('Failed to save database:', e);
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
     }
   }
 }
 
+/**
+ * Transaction-scoped DB that uses a single client
+ */
+class PgTxDb {
+  constructor(client) {
+    this._client = client;
+  }
+
+  _convertParams(sql, params) {
+    let idx = 0;
+    return sql.replace(/\?/g, () => `$${++idx}`);
+  }
+
+  async get(sql, ...params) {
+    const pgSql = this._convertParams(sql, params);
+    const result = await this._client.query(pgSql, params);
+    return result.rows[0] || undefined;
+  }
+
+  async all(sql, ...params) {
+    const pgSql = this._convertParams(sql, params);
+    const result = await this._client.query(pgSql, params);
+    return result.rows;
+  }
+
+  async run(sql, ...params) {
+    const pgSql = this._convertParams(sql, params);
+    const result = await this._client.query(pgSql, params);
+    return {
+      changes: result.rowCount,
+      lastInsertRowid: result.rows?.[0]?.id || null,
+    };
+  }
+}
+
+let db;
+
 async function initDatabase() {
   if (db) return db;
 
-  const dataDir = path.join(__dirname, 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL environment variable is required');
   }
 
-  const SQL = await initSqlJs();
+  pool = new Pool({
+    connectionString,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    max: 10,
+    idleTimeoutMillis: 30000,
+  });
 
-  let sqlDb;
-  if (fs.existsSync(DB_PATH)) {
-    const fileBuffer = fs.readFileSync(DB_PATH);
-    sqlDb = new SQL.Database(fileBuffer);
-  } else {
-    sqlDb = new SQL.Database();
-  }
+  // Test connection
+  const client = await pool.connect();
+  console.log('✅ Connected to PostgreSQL');
+  client.release();
 
-  db = new DbWrapper(sqlDb);
-  db.pragma('foreign_keys = ON');
-  initTables();
+  db = new PgDb(pool);
+  await initTables();
 
   return db;
 }
@@ -154,28 +147,30 @@ function getDb() {
   return db;
 }
 
-function initTables() {
-  db.exec(`
+async function initTables() {
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY,
+      id BIGINT PRIMARY KEY,
       username TEXT,
       first_name TEXT,
       last_name TEXT,
       photo_url TEXT,
       balance INTEGER DEFAULT 0,
       referral_code TEXT UNIQUE,
-      referred_by INTEGER,
+      referred_by BIGINT,
       is_admin INTEGER DEFAULT 0,
-      last_daily_bonus TEXT,
+      last_daily_bonus TIMESTAMP,
       total_earned INTEGER DEFAULT 0,
       tasks_completed INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (referred_by) REFERENCES users(id)
+      ad_balance INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
     );
+  `);
 
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       type TEXT NOT NULL CHECK(type IN ('subscribe_channel', 'start_bot', 'visit_link')),
       title TEXT NOT NULL,
       description TEXT,
@@ -187,42 +182,45 @@ function initTables() {
       is_active INTEGER DEFAULT 1,
       max_completions INTEGER DEFAULT 0,
       current_completions INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now'))
+      created_at TIMESTAMP DEFAULT NOW()
     );
+  `);
 
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS task_completions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      task_id INTEGER NOT NULL,
-      completed_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(id),
-      FOREIGN KEY (task_id) REFERENCES tasks(id),
+      id SERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(id),
+      task_id INTEGER NOT NULL REFERENCES tasks(id),
+      completed_at TIMESTAMP DEFAULT NOW(),
       UNIQUE(user_id, task_id)
     );
+  `);
 
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS referrals (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      referrer_id INTEGER NOT NULL,
-      referred_id INTEGER NOT NULL,
+      id SERIAL PRIMARY KEY,
+      referrer_id BIGINT NOT NULL REFERENCES users(id),
+      referred_id BIGINT NOT NULL REFERENCES users(id),
       bonus INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (referrer_id) REFERENCES users(id),
-      FOREIGN KEY (referred_id) REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT NOW(),
       UNIQUE(referred_id)
     );
+  `);
 
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS daily_bonuses (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
+      id SERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(id),
       amount INTEGER NOT NULL,
       streak INTEGER DEFAULT 1,
-      claimed_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      claimed_at TIMESTAMP DEFAULT NOW()
     );
+  `);
 
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS ad_tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      advertiser_id INTEGER NOT NULL,
+      id SERIAL PRIMARY KEY,
+      advertiser_id BIGINT NOT NULL REFERENCES users(id),
       title TEXT NOT NULL,
       description TEXT,
       url TEXT NOT NULL,
@@ -231,72 +229,83 @@ function initTables() {
       max_completions INTEGER NOT NULL DEFAULT 100,
       current_completions INTEGER DEFAULT 0,
       status TEXT DEFAULT 'active' CHECK(status IN ('active', 'paused', 'completed', 'deleted')),
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (advertiser_id) REFERENCES users(id)
-    );
-
-    CREATE TABLE IF NOT EXISTS ad_task_completions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      task_id INTEGER NOT NULL,
-      user_id INTEGER NOT NULL,
-      completed_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (task_id) REFERENCES ad_tasks(id),
-      FOREIGN KEY (user_id) REFERENCES users(id),
-      UNIQUE(user_id, task_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS ad_deposits (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      amount INTEGER NOT NULL,
-      method TEXT DEFAULT 'manual',
-      status TEXT DEFAULT 'completed',
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
+      image_url TEXT DEFAULT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
     );
   `);
 
-  // Add ad_balance column to users if not exists
-  try { db.exec('ALTER TABLE users ADD COLUMN ad_balance INTEGER DEFAULT 0'); } catch(e) {}
-  // Add image_url column to ad_tasks if not exists
-  try { db.exec('ALTER TABLE ad_tasks ADD COLUMN image_url TEXT DEFAULT NULL'); } catch(e) {}
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS ad_task_completions (
+      id SERIAL PRIMARY KEY,
+      task_id INTEGER NOT NULL REFERENCES ad_tasks(id),
+      user_id BIGINT NOT NULL REFERENCES users(id),
+      completed_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(user_id, task_id)
+    );
+  `);
 
-  // Settings table
-  db.exec(`
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS ad_deposits (
+      id SERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(id),
+      amount INTEGER NOT NULL,
+      method TEXT DEFAULT 'manual',
+      status TEXT DEFAULT 'completed',
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
   `);
-  // Default ad pricing settings
-  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_price', '20'); } catch(e) {}
-  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_user_reward', '10'); } catch(e) {}
-  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_ref_reward', '2'); } catch(e) {}
-  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_commission', '8'); } catch(e) {}
-  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('admin_balance', '0'); } catch(e) {}
 
-  // Ad transactions log
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS ad_transactions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       task_id INTEGER NOT NULL,
-      user_id INTEGER,
+      user_id BIGINT,
       type TEXT NOT NULL,
       amount INTEGER NOT NULL,
-      created_at TEXT DEFAULT (datetime('now'))
+      created_at TIMESTAMP DEFAULT NOW()
     );
   `);
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_transactions_type ON ad_transactions(type)'); } catch(e) {}
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_transactions_user ON ad_transactions(user_id)'); } catch(e) {}
 
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_user ON task_completions(user_id)'); } catch(e) {}
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_task ON task_completions(task_id)'); } catch(e) {}
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id)'); } catch(e) {}
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_daily_bonuses_user ON daily_bonuses(user_id)'); } catch(e) {}
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_tasks_advertiser ON ad_tasks(advertiser_id)'); } catch(e) {}
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_task_completions_user ON ad_task_completions(user_id)'); } catch(e) {}
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_task_completions_task ON ad_task_completions(task_id)'); } catch(e) {}
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_ad_deposits_user ON ad_deposits(user_id)'); } catch(e) {}
+  // Indexes
+  const indexes = [
+    'CREATE INDEX IF NOT EXISTS idx_task_completions_user ON task_completions(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_task_completions_task ON task_completions(task_id)',
+    'CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id)',
+    'CREATE INDEX IF NOT EXISTS idx_daily_bonuses_user ON daily_bonuses(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_ad_tasks_advertiser ON ad_tasks(advertiser_id)',
+    'CREATE INDEX IF NOT EXISTS idx_ad_task_completions_user ON ad_task_completions(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_ad_task_completions_task ON ad_task_completions(task_id)',
+    'CREATE INDEX IF NOT EXISTS idx_ad_deposits_user ON ad_deposits(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_ad_transactions_type ON ad_transactions(type)',
+    'CREATE INDEX IF NOT EXISTS idx_ad_transactions_user ON ad_transactions(user_id)',
+  ];
+  for (const idx of indexes) {
+    try { await db.exec(idx); } catch(e) {}
+  }
+
+  // Default settings
+  const defaults = [
+    ['ad_price', '20'],
+    ['ad_user_reward', '10'],
+    ['ad_ref_reward', '2'],
+    ['ad_commission', '8'],
+    ['admin_balance', '0'],
+  ];
+  for (const [key, value] of defaults) {
+    try {
+      await db.run(
+        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING",
+        key, value
+      );
+    } catch(e) {}
+  }
 
   console.log('✅ Database tables initialized');
 }

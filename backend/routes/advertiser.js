@@ -20,13 +20,11 @@ router.post('/resolve-url', async (req, res) => {
     let username = url;
     const match = url.match(/(?:https?:\/\/)?t\.me\/([a-zA-Z0-9_]+)/);
     if (match) username = match[1];
-    // Remove @ if present
     username = username.replace(/^@/, '');
 
     try {
       const chat = await bot.getChat('@' + username);
       
-      // Get photo URL if available
       let photoUrl = null;
       if (chat.photo && chat.photo.small_file_id) {
         try {
@@ -65,10 +63,10 @@ router.post('/resolve-url', async (req, res) => {
  * GET /api/advertiser/reward-price
  * Получить все цены за выполнение
  */
-router.get('/reward-price', (req, res) => {
+router.get('/reward-price', async (req, res) => {
   try {
     const db = getDb();
-    const rows = db.prepare("SELECT key, value FROM settings WHERE key IN ('ad_price','ad_user_reward','ad_ref_reward','ad_commission')").all();
+    const rows = await db.all("SELECT key, value FROM settings WHERE key IN ('ad_price','ad_user_reward','ad_ref_reward','ad_commission')");
     const s = {};
     rows.forEach(r => { s[r.key] = parseInt(r.value); });
     res.json({
@@ -87,11 +85,11 @@ router.get('/reward-price', (req, res) => {
  * GET /api/advertiser/balance
  * Рекламный баланс пользователя
  */
-router.get('/balance', (req, res) => {
+router.get('/balance', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
-    const user = db.prepare('SELECT ad_balance FROM users WHERE id = ?').get(userId);
+    const user = await db.get('SELECT ad_balance FROM users WHERE id = ?', userId);
     res.json({ ad_balance: user?.ad_balance || 0 });
   } catch (error) {
     console.error('Get ad balance error:', error);
@@ -103,7 +101,7 @@ router.get('/balance', (req, res) => {
  * POST /api/advertiser/deposit
  * Пополнение рекламного баланса (заглушка — без реального платежа)
  */
-router.post('/deposit', (req, res) => {
+router.post('/deposit', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
@@ -113,21 +111,20 @@ router.post('/deposit', (req, res) => {
       return res.status(400).json({ error: 'Invalid amount (1 — 1,000,000)' });
     }
 
-    const doDeposit = db.transaction(() => {
-      // Record deposit
-      db.prepare(
-        'INSERT INTO ad_deposits (user_id, amount, method, status) VALUES (?, ?, ?, ?)'
-      ).run(userId, amount, 'manual', 'completed');
+    const result = await db.transaction(async (tx) => {
+      await tx.run(
+        'INSERT INTO ad_deposits (user_id, amount, method, status) VALUES (?, ?, ?, ?)',
+        userId, amount, 'manual', 'completed'
+      );
 
-      // Update ad_balance
-      db.prepare(
-        'UPDATE users SET ad_balance = ad_balance + ?, updated_at = datetime(\'now\') WHERE id = ?'
-      ).run(amount, userId);
+      await tx.run(
+        'UPDATE users SET ad_balance = ad_balance + ?, updated_at = NOW() WHERE id = ?',
+        amount, userId
+      );
 
-      return db.prepare('SELECT ad_balance FROM users WHERE id = ?').get(userId);
+      return await tx.get('SELECT ad_balance FROM users WHERE id = ?', userId);
     });
 
-    const result = doDeposit();
     res.json({ success: true, ad_balance: result.ad_balance });
   } catch (error) {
     console.error('Deposit error:', error);
@@ -139,16 +136,16 @@ router.post('/deposit', (req, res) => {
  * GET /api/advertiser/tasks
  * Мои рекламные задания
  */
-router.get('/tasks', (req, res) => {
+router.get('/tasks', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
 
-    const tasks = db.prepare(`
+    const tasks = await db.all(`
       SELECT * FROM ad_tasks 
       WHERE advertiser_id = ? AND status != 'deleted'
       ORDER BY created_at DESC
-    `).all(userId);
+    `, userId);
 
     res.json({ tasks });
   } catch (error) {
@@ -159,16 +156,16 @@ router.get('/tasks', (req, res) => {
 
 /**
  * POST /api/advertiser/tasks
- * Создать рекламное задание (списание reward × max_completions с ad_balance)
+ * Создать рекламное задание (списание adPrice × max_completions с ad_balance)
  */
-router.post('/tasks', (req, res) => {
+router.post('/tasks', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
     const { title, description, url, type, max_completions, image_url } = req.body;
 
     // Get pricing from settings
-    const pricingRows = db.prepare("SELECT key, value FROM settings WHERE key IN ('ad_price','ad_user_reward')").all();
+    const pricingRows = await db.all("SELECT key, value FROM settings WHERE key IN ('ad_price','ad_user_reward')");
     const ps = {};
     pricingRows.forEach(r => { ps[r.key] = parseInt(r.value); });
     const adPrice = ps.ad_price || 20;
@@ -190,32 +187,32 @@ router.post('/tasks', (req, res) => {
 
     const totalCost = adPrice * max_completions;
 
-    const createTask = db.transaction(() => {
-      // Check balance
-      const user = db.prepare('SELECT ad_balance FROM users WHERE id = ?').get(userId);
-      if (!user || user.ad_balance < totalCost) {
-        throw new Error(`Недостаточно средств. Нужно: ${totalCost}, доступно: ${user?.ad_balance || 0}`);
-      }
-
-      // Deduct from ad_balance
-      db.prepare(
-        'UPDATE users SET ad_balance = ad_balance - ?, updated_at = datetime(\'now\') WHERE id = ?'
-      ).run(totalCost, userId);
-
-      // Create task
-      const result = db.prepare(`
-        INSERT INTO ad_tasks (advertiser_id, title, description, url, type, reward, max_completions, image_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(userId, title, description || '', url, type, reward, max_completions, image_url || null);
-
-      const newTask = db.prepare('SELECT * FROM ad_tasks WHERE id = ?').get(result.lastInsertRowid);
-      const updatedUser = db.prepare('SELECT ad_balance FROM users WHERE id = ?').get(userId);
-
-      return { task: newTask, ad_balance: updatedUser.ad_balance };
-    });
-
     try {
-      const result = createTask();
+      const result = await db.transaction(async (tx) => {
+        // Check balance
+        const user = await tx.get('SELECT ad_balance FROM users WHERE id = ?', userId);
+        if (!user || user.ad_balance < totalCost) {
+          throw new Error(`Недостаточно средств. Нужно: ${totalCost}, доступно: ${user?.ad_balance || 0}`);
+        }
+
+        // Deduct from ad_balance
+        await tx.run(
+          'UPDATE users SET ad_balance = ad_balance - ?, updated_at = NOW() WHERE id = ?',
+          totalCost, userId
+        );
+
+        // Create task
+        const newTask = await tx.get(`
+          INSERT INTO ad_tasks (advertiser_id, title, description, url, type, reward, max_completions, image_url)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          RETURNING *
+        `, userId, title, description || '', url, type, reward, max_completions, image_url || null);
+
+        const updatedUser = await tx.get('SELECT ad_balance FROM users WHERE id = ?', userId);
+
+        return { task: newTask, ad_balance: updatedUser.ad_balance };
+      });
+
       res.json({ success: true, ...result });
     } catch (txError) {
       return res.status(400).json({ error: txError.message });
@@ -230,14 +227,14 @@ router.post('/tasks', (req, res) => {
  * PUT /api/advertiser/tasks/:id
  * Пауза / возобновление задания
  */
-router.put('/tasks/:id', (req, res) => {
+router.put('/tasks/:id', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
     const taskId = parseInt(req.params.id);
     const { status } = req.body;
 
-    const task = db.prepare('SELECT * FROM ad_tasks WHERE id = ? AND advertiser_id = ?').get(taskId, userId);
+    const task = await db.get('SELECT * FROM ad_tasks WHERE id = ? AND advertiser_id = ?', taskId, userId);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -246,8 +243,8 @@ router.put('/tasks/:id', (req, res) => {
       return res.status(400).json({ error: 'Status must be active or paused' });
     }
 
-    db.prepare('UPDATE ad_tasks SET status = ? WHERE id = ?').run(status, taskId);
-    const updated = db.prepare('SELECT * FROM ad_tasks WHERE id = ?').get(taskId);
+    await db.run('UPDATE ad_tasks SET status = ? WHERE id = ?', status, taskId);
+    const updated = await db.get('SELECT * FROM ad_tasks WHERE id = ?', taskId);
 
     res.json({ success: true, task: updated });
   } catch (error) {
@@ -260,34 +257,31 @@ router.put('/tasks/:id', (req, res) => {
  * DELETE /api/advertiser/tasks/:id
  * Удалить задание (возврат остатка на баланс)
  */
-router.delete('/tasks/:id', (req, res) => {
+router.delete('/tasks/:id', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
     const taskId = parseInt(req.params.id);
 
-    const task = db.prepare('SELECT * FROM ad_tasks WHERE id = ? AND advertiser_id = ?').get(taskId, userId);
+    const task = await db.get('SELECT * FROM ad_tasks WHERE id = ? AND advertiser_id = ?', taskId, userId);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    const deleteTask = db.transaction(() => {
-      // Refund remaining budget
-      const remaining = (task.max_completions - task.current_completions) * task.reward;
+    const remaining = (task.max_completions - task.current_completions) * task.reward;
+
+    const result = await db.transaction(async (tx) => {
       if (remaining > 0) {
-        db.prepare(
-          'UPDATE users SET ad_balance = ad_balance + ?, updated_at = datetime(\'now\') WHERE id = ?'
-        ).run(remaining, userId);
+        await tx.run(
+          'UPDATE users SET ad_balance = ad_balance + ?, updated_at = NOW() WHERE id = ?',
+          remaining, userId
+        );
       }
 
-      // Mark as deleted
-      db.prepare('UPDATE ad_tasks SET status = \'deleted\' WHERE id = ?').run(taskId);
+      await tx.run("UPDATE ad_tasks SET status = 'deleted' WHERE id = ?", taskId);
 
-      return db.prepare('SELECT ad_balance FROM users WHERE id = ?').get(userId);
+      return await tx.get('SELECT ad_balance FROM users WHERE id = ?', userId);
     });
-
-    const result = deleteTask();
-    const remaining = (task.max_completions - task.current_completions) * task.reward;
 
     res.json({ 
       success: true, 
@@ -304,41 +298,44 @@ router.delete('/tasks/:id', (req, res) => {
  * GET /api/advertiser/stats
  * Статистика рекламодателя
  */
-router.get('/stats', (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
 
-    const totalTasks = db.prepare(
-      'SELECT COUNT(*) as count FROM ad_tasks WHERE advertiser_id = ? AND status != \'deleted\''
-    ).get(userId);
+    const totalTasks = await db.get(
+      "SELECT COUNT(*) as count FROM ad_tasks WHERE advertiser_id = ? AND status != 'deleted'",
+      userId
+    );
 
-    const totalCompletions = db.prepare(`
+    const totalCompletions = await db.get(`
       SELECT COUNT(*) as count FROM ad_task_completions atc
       JOIN ad_tasks at2 ON at2.id = atc.task_id
       WHERE at2.advertiser_id = ?
-    `).get(userId);
+    `, userId);
 
-    const totalSpent = db.prepare(`
+    const totalSpent = await db.get(`
       SELECT COALESCE(SUM(at2.reward), 0) as total FROM ad_task_completions atc
       JOIN ad_tasks at2 ON at2.id = atc.task_id
       WHERE at2.advertiser_id = ?
-    `).get(userId);
+    `, userId);
 
-    const activeTasks = db.prepare(
-      'SELECT COUNT(*) as count FROM ad_tasks WHERE advertiser_id = ? AND status = \'active\''
-    ).get(userId);
+    const activeTasks = await db.get(
+      "SELECT COUNT(*) as count FROM ad_tasks WHERE advertiser_id = ? AND status = 'active'",
+      userId
+    );
 
-    const deposits = db.prepare(
-      'SELECT COALESCE(SUM(amount), 0) as total FROM ad_deposits WHERE user_id = ? AND status = \'completed\''
-    ).get(userId);
+    const deposits = await db.get(
+      "SELECT COALESCE(SUM(amount), 0) as total FROM ad_deposits WHERE user_id = ? AND status = 'completed'",
+      userId
+    );
 
     res.json({
-      total_tasks: totalTasks?.count || 0,
-      active_tasks: activeTasks?.count || 0,
-      total_completions: totalCompletions?.count || 0,
-      total_spent: totalSpent?.total || 0,
-      total_deposited: deposits?.total || 0,
+      total_tasks: parseInt(totalTasks?.count || 0),
+      active_tasks: parseInt(activeTasks?.count || 0),
+      total_completions: parseInt(totalCompletions?.count || 0),
+      total_spent: parseInt(totalSpent?.total || 0),
+      total_deposited: parseInt(deposits?.total || 0),
     });
   } catch (error) {
     console.error('Get ad stats error:', error);
