@@ -602,22 +602,6 @@ export default function AdminPage({ user }) {
               </div>
             )}
 
-            <div className="form-group">
-              <label className="form-label">🖼 Картинка (URL)</label>
-              <input
-                className="input"
-                placeholder="https://... (автоматически или вставьте вручную)"
-                value={taskForm.image_url || ''}
-                onChange={e => setTaskForm({ ...taskForm, image_url: e.target.value || null })}
-              />
-              {taskForm.image_url && (
-                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <img src={taskForm.image_url} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover', border: '1px solid var(--border)' }} 
-                    onError={e => { e.target.style.display = 'none'; }} />
-                  <span style={{ fontSize: 12, color: 'var(--success)' }}>✅ Превью</span>
-                </div>
-              )}
-            </div>
 
             <div className="form-row">
               <div className="form-group" style={{ flex: 1 }}>

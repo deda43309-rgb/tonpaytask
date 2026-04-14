@@ -22,72 +22,33 @@ router.post('/resolve-url', async (req, res) => {
       return res.json({ success: true, title: url.trim(), description: '', image_url: null, username: '', members_count: null });
     }
     const username = match[1];
-    console.log('[resolve-url] Resolving:', username);
 
-    // Try to get chat info (graceful — .catch returns null)
-    const chat = await bot.getChat('@' + username).catch((e) => {
-      console.log('[resolve-url] getChat failed:', e.message);
-      return null;
-    });
+    // Public userpic URL (works for any public channel/bot — same as tonera)
+    const photo = `https://t.me/i/userpic/320/${username}.jpg`;
 
-    if (!chat) {
-      return res.json({
+    try {
+      const chat = await bot.getChat('@' + username);
+      const memberCount = await bot.getChatMemberCount('@' + username).catch(() => 0);
+
+      res.json({
         success: true,
-        title: '@' + username,
+        title: chat.title || chat.first_name || username,
+        description: chat.description || chat.bio || '',
+        image_url: photo,
+        username: chat.username || username,
+        members_count: memberCount || null,
+      });
+    } catch (e) {
+      // getChat failed — still return photo via public URL
+      res.json({
+        success: true,
+        title: username,
         description: '',
-        image_url: null,
         username: username,
+        image_url: photo,
         members_count: null,
       });
     }
-
-    console.log('[resolve-url] Chat type:', chat.type, 'has photo:', !!chat.photo);
-
-    // Get member count separately (more reliable)
-    const memberCount = await bot.getChatMemberCount('@' + username).catch(() => 0);
-
-    // Get photo
-    let photoUrl = null;
-    if (chat.photo) {
-      const fileId = chat.photo.big_file_id || chat.photo.small_file_id;
-      console.log('[resolve-url] Photo file_id:', fileId ? 'found' : 'none');
-      if (fileId) {
-        const fileInfo = await bot.getFile(fileId).catch((e) => {
-          console.log('[resolve-url] getFile failed:', e.message);
-          return null;
-        });
-        if (fileInfo?.file_path) {
-          photoUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${fileInfo.file_path}`;
-          console.log('[resolve-url] Photo URL generated');
-        }
-      }
-    } else if (chat.type === 'private' && chat.id) {
-      // For bots — try getUserProfilePhotos
-      try {
-        const photos = await bot.getUserProfilePhotos(chat.id, { offset: 0, limit: 1 });
-        if (photos.total_count > 0 && photos.photos[0]?.[0]) {
-          const fileId = photos.photos[0][photos.photos[0].length - 1].file_id;
-          const fileInfo = await bot.getFile(fileId).catch(() => null);
-          if (fileInfo?.file_path) {
-            photoUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${fileInfo.file_path}`;
-            console.log('[resolve-url] Bot photo from getUserProfilePhotos');
-          }
-        }
-      } catch (e) {
-        console.log('[resolve-url] getUserProfilePhotos failed:', e.message);
-      }
-    }
-
-    console.log('[resolve-url] Result:', { title: chat.title || chat.first_name, image_url: photoUrl ? 'yes' : 'null', members: memberCount });
-
-    res.json({
-      success: true,
-      title: chat.title || chat.first_name || username,
-      description: chat.description || chat.bio || '',
-      image_url: photoUrl,
-      username: chat.username || username,
-      members_count: memberCount || null,
-    });
   } catch (error) {
     console.error('Resolve URL error:', error);
     res.status(500).json({ error: 'Internal server error' });
