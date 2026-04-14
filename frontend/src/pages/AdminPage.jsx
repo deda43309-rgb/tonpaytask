@@ -603,27 +603,6 @@ export default function AdminPage({ user }) {
             )}
 
 
-            <div className="form-row">
-              <div className="form-group" style={{ flex: 1 }}>
-                <label className="form-label">Порядок</label>
-                <input
-                  className="input"
-                  type="number"
-                  value={taskForm.sort_order}
-                  onChange={e => setTaskForm({ ...taskForm, sort_order: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="form-group" style={{ flex: 1 }}>
-                <label className="form-label">Макс. выполнений</label>
-                <input
-                  className="input"
-                  type="number"
-                  placeholder="0 = без лимита"
-                  value={taskForm.max_completions}
-                  onChange={e => setTaskForm({ ...taskForm, max_completions: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
 
             <button
               className="btn btn-primary btn-block mt-16"
