@@ -66,11 +66,28 @@ router.post('/tasks', async (req, res) => {
     if (!type || !title || !target_url) {
       return res.status(400).json({ error: 'type, title, and target_url are required' });
     }
+    if (!max_completions || max_completions < 1) {
+      return res.status(400).json({ error: 'Выберите кол-во выполнений' });
+    }
 
     const validTypes = ['subscribe_channel', 'start_bot', 'visit_link'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({ error: `Invalid type. Must be: ${validTypes.join(', ')}` });
     }
+
+    const taskReward = parseInt(reward) || 0;
+    const totalCost = taskReward * parseInt(max_completions);
+
+    // Check system balance
+    const balRow = await db.get("SELECT value FROM settings WHERE key = 'system_balance'");
+    const systemBalance = parseInt(balRow?.value) || 0;
+
+    if (totalCost > systemBalance) {
+      return res.status(400).json({ error: `Недостаточно баланса системы. Нужно: ${totalCost}, доступно: ${systemBalance}` });
+    }
+
+    // Deduct from system balance
+    await db.run("UPDATE settings SET value = ? WHERE key = 'system_balance'", String(systemBalance - totalCost));
 
     const result = await db.get(`
       INSERT INTO tasks (type, title, description, reward, target_url, target_id, icon, sort_order, max_completions, image_url)
@@ -80,16 +97,16 @@ router.post('/tasks', async (req, res) => {
       type,
       title,
       description || '',
-      reward || 0,
+      taskReward,
       target_url,
       target_id || '',
       icon || '📋',
       sort_order || 0,
-      max_completions || 0,
+      max_completions,
       image_url || null
     );
 
-    res.json({ task: result });
+    res.json({ task: result, system_balance: systemBalance - totalCost });
   } catch (error) {
     console.error('Admin create task error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -148,6 +165,19 @@ router.delete('/tasks/:id', async (req, res) => {
   try {
     const db = getDb();
     const taskId = parseInt(req.params.id);
+
+    // Get task to calculate refund
+    const task = await db.get('SELECT * FROM tasks WHERE id = ?', taskId);
+    if (task && task.max_completions > 0) {
+      const remaining = task.max_completions - (task.current_completions || 0);
+      if (remaining > 0) {
+        const refund = remaining * (task.reward || 0);
+        await db.run(
+          "UPDATE settings SET value = CAST(CAST(value AS INTEGER) + ? AS TEXT) WHERE key = 'system_balance'",
+          refund
+        );
+      }
+    }
 
     await db.run('DELETE FROM task_completions WHERE task_id = ?', taskId);
     await db.run('DELETE FROM tasks WHERE id = ?', taskId);

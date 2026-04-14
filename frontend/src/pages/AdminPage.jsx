@@ -418,6 +418,22 @@ export default function AdminPage({ user }) {
           {tab === 'settings' && (
             <div className="admin-settings stagger">
               <div className="card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🏦 Баланс системы</h3>
+                <div className="form-group">
+                  <label className="form-label">💰 Системный баланс (Points)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    value={settings.system_balance || 0}
+                    onChange={e => setSettings({ ...settings, system_balance: e.target.value })}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Из этого баланса списывается стоимость заданий (reward × кол-во)
+                  </div>
+                </div>
+              </div>
+
+              <div className="card" style={{ padding: 20 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📢 Ценообразование рекламных заданий</h3>
                 
                 <div className="form-group">
@@ -484,6 +500,7 @@ export default function AdminPage({ user }) {
                         ad_user_reward: settings.ad_user_reward,
                         ad_ref_reward: settings.ad_ref_reward,
                         ad_commission: settings.ad_commission,
+                        system_balance: settings.system_balance,
                       });
                       setSettings(res.settings);
                       showToastMsg('Настройки сохранены ✅');
@@ -603,6 +620,28 @@ export default function AdminPage({ user }) {
             )}
 
 
+            <div className="form-group">
+              <label className="form-label">📊 Кол-во выполнений</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {[100, 200, 300, 400, 500, 1000].map(n => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`btn ${taskForm.max_completions === n ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ flex: '1 1 auto', minWidth: 60, padding: '8px 4px', fontSize: 13 }}
+                    onClick={() => setTaskForm({ ...taskForm, max_completions: n })}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              {taskForm.max_completions > 0 && taskForm.reward > 0 && (
+                <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+                  💰 Стоимость: <b style={{ color: 'var(--accent-primary)' }}>{taskForm.reward * taskForm.max_completions} Points</b>
+                  {' '}({taskForm.max_completions} × {taskForm.reward})
+                </div>
+              )}
+            </div>
 
             <button
               className="btn btn-primary btn-block mt-16"
