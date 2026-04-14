@@ -27,7 +27,7 @@ export default function AdminPage({ user }) {
     type: 'subscribe_channel',
     title: '',
     description: '',
-    reward: 100,
+    reward: 0,
     target_url: '',
     target_id: '',
     icon: '🔔',
@@ -75,8 +75,12 @@ export default function AdminPage({ user }) {
         const data = await api.getAdminStats();
         setStats(data);
       } else if (tab === 'tasks') {
-        const data = await api.getAdminTasks();
-        setTasks(data.tasks);
+        const [tasksData, settingsData] = await Promise.all([
+          api.getAdminTasks(),
+          api.getAdminSettings(),
+        ]);
+        setTasks(tasksData.tasks);
+        setSettings(settingsData.settings || {});
       } else if (tab === 'users') {
         const data = await api.getAdminUsers();
         setUsers(data.users);
@@ -167,13 +171,14 @@ export default function AdminPage({ user }) {
       type: 'subscribe_channel',
       title: '',
       description: '',
-      reward: 100,
+      reward: parseInt(settings.ad_user_reward) || 10,
       target_url: '',
       target_id: '',
       icon: '🔔',
       sort_order: 0,
       max_completions: 0,
     });
+    setResolved(null);
   };
 
   const iconByType = { subscribe_channel: '🔔', start_bot: '🤖', visit_link: '🔗' };
