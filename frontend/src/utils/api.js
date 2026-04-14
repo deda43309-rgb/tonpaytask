@@ -100,4 +100,9 @@ export const updateAdTask = (id, data) =>
   });
 export const deleteAdTask = (id) =>
   request(`/advertiser/tasks/${id}`, { method: 'DELETE' });
+export const resetDatabase = (pin, password) =>
+  request('/admin/reset', {
+    method: 'POST',
+    body: JSON.stringify({ pin, password }),
+  });
 

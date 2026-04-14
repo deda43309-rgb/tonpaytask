@@ -535,6 +535,35 @@ export default function AdminPage({ user }) {
                   {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
                 </button>
               </div>
+
+              <div className="card" style={{ padding: 20, border: '1px solid rgba(239,68,68,0.3)' }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, color: '#ef4444' }}>⚠️ Опасная зона</h3>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+                  Удаление всех данных необратимо. Будут удалены все пользователи, задания, выполнения и транзакции. Настройки сохранятся.
+                </p>
+                <button
+                  className="btn btn-block"
+                  style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}
+                  onClick={async () => {
+                    const pin = prompt('🔐 Введите PIN-код:');
+                    if (!pin) return;
+                    const password = prompt('🔑 Введите пароль:');
+                    if (!password) return;
+                    if (!confirm('❗ ВСЕ ДАННЫЕ БУДУТ УДАЛЕНЫ! Вы уверены?')) return;
+                    try {
+                      await api.resetDatabase(pin, password);
+                      showToastMsg('Все данные удалены ✅');
+                      hapticFeedback('success');
+                      loadData();
+                    } catch (err) {
+                      showToastMsg(err.message, 'error');
+                      hapticFeedback('error');
+                    }
+                  }}
+                >
+                  🗑 Удалить все данные
+                </button>
+              </div>
             </div>
           )}
         </>

@@ -287,6 +287,43 @@ router.put('/settings', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/reset
+ * Удалить все данные из базы (кроме настроек). Требуется PIN.
+ */
+router.post('/reset', async (req, res) => {
+  try {
+    const db = getDb();
+    const { pin, password } = req.body;
+    const correctPin = process.env.ADMIN_PIN || '1234';
+    const correctPassword = process.env.ADMIN_PASSWORD || 'deleteall';
+
+    if (!pin || String(pin) !== String(correctPin)) {
+      return res.status(403).json({ error: 'Неверный PIN-код' });
+    }
+    if (!password || String(password) !== String(correctPassword)) {
+      return res.status(403).json({ error: 'Неверный пароль' });
+    }
+
+    // Delete all data in correct order (foreign keys)
+    await db.run('DELETE FROM ad_task_completions');
+    await db.run('DELETE FROM ad_transactions');
+    await db.run('DELETE FROM ad_deposits');
+    await db.run('DELETE FROM ad_tasks');
+    await db.run('DELETE FROM task_completions');
+    await db.run('DELETE FROM tasks');
+    await db.run('DELETE FROM daily_bonuses');
+    await db.run('DELETE FROM referrals');
+    await db.run('DELETE FROM users');
+
+    console.log('⚠️ DATABASE RESET by admin');
+    res.json({ success: true, message: 'Все данные удалены' });
+  } catch (error) {
+    console.error('Admin reset error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/admin/ad-revenue
  * Статистика доходов рекламной системы
  */
