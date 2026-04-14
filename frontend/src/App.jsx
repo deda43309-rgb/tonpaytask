@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import BottomNav from './components/BottomNav';
 import Loader from './components/Loader';
+import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './pages/HomePage';
 import TasksPage from './pages/TasksPage';
 import ReferralPage from './pages/ReferralPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
-import { getStartParam, expandApp, setHeaderColor, setBackgroundColor } from './utils/telegram';
+import { getStartParam, expandApp, setHeaderColor, setBackgroundColor, getInitData } from './utils/telegram';
 import * as api from './utils/api';
 
 export default function App() {
@@ -28,11 +29,14 @@ export default function App() {
   const doLogin = async () => {
     try {
       const startParam = getStartParam();
+      console.log('[TonPayTask] initData:', getInitData() ? 'present' : 'empty');
+      console.log('[TonPayTask] startParam:', startParam);
       const data = await api.login(startParam);
+      console.log('[TonPayTask] login result:', data);
       setUser(data.user);
     } catch (err) {
-      console.error('Login failed:', err);
-      setError(err.message);
+      console.error('[TonPayTask] Login failed:', err);
+      setError(err.message || 'Unknown login error');
     } finally {
       setLoading(false);
     }
@@ -63,6 +67,9 @@ export default function App() {
           <span className="empty-state-icon">⚠️</span>
           <h3 className="empty-state-title">Ошибка подключения</h3>
           <p className="empty-state-text">{error}</p>
+          <p className="empty-state-text" style={{ marginTop: '8px', fontSize: '11px', opacity: 0.5 }}>
+            initData: {getInitData() ? '✅' : '❌'}
+          </p>
           <button className="btn btn-primary mt-16" onClick={() => { setError(null); setLoading(true); doLogin(); }}>
             🔄 Повторить
           </button>
@@ -74,13 +81,15 @@ export default function App() {
   return (
     <HashRouter>
       <div className="app-bg" />
-      <Routes>
-        <Route path="/" element={<HomePage user={user} onUserUpdate={handleUserUpdate} />} />
-        <Route path="/tasks" element={<TasksPage onUserUpdate={handleUserUpdate} />} />
-        <Route path="/referral" element={<ReferralPage user={user} />} />
-        <Route path="/profile" element={<ProfilePage user={user} />} />
-        <Route path="/admin" element={<AdminPage user={user} />} />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<HomePage user={user} onUserUpdate={handleUserUpdate} />} />
+          <Route path="/tasks" element={<TasksPage onUserUpdate={handleUserUpdate} />} />
+          <Route path="/referral" element={<ReferralPage user={user} />} />
+          <Route path="/profile" element={<ProfilePage user={user} />} />
+          <Route path="/admin" element={<AdminPage user={user} />} />
+        </Routes>
+      </ErrorBoundary>
       <BottomNav />
     </HashRouter>
   );
