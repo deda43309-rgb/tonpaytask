@@ -22,12 +22,15 @@ router.post('/resolve-url', async (req, res) => {
       return res.json({ success: true, title: url.trim(), description: '', image_url: null, username: '', members_count: null });
     }
     const username = match[1];
+    console.log('[resolve-url] Resolving:', username);
 
     // Try to get chat info (graceful — .catch returns null)
-    const chat = await bot.getChat('@' + username).catch(() => null);
+    const chat = await bot.getChat('@' + username).catch((e) => {
+      console.log('[resolve-url] getChat failed:', e.message);
+      return null;
+    });
 
     if (!chat) {
-      // Bot can't access this chat — return username as fallback
       return res.json({
         success: true,
         title: '@' + username,
@@ -38,20 +41,44 @@ router.post('/resolve-url', async (req, res) => {
       });
     }
 
+    console.log('[resolve-url] Chat type:', chat.type, 'has photo:', !!chat.photo);
+
     // Get member count separately (more reliable)
     const memberCount = await bot.getChatMemberCount('@' + username).catch(() => 0);
 
-    // Get photo (use big_file_id for better quality)
+    // Get photo
     let photoUrl = null;
     if (chat.photo) {
       const fileId = chat.photo.big_file_id || chat.photo.small_file_id;
+      console.log('[resolve-url] Photo file_id:', fileId ? 'found' : 'none');
       if (fileId) {
-        const fileInfo = await bot.getFile(fileId).catch(() => null);
+        const fileInfo = await bot.getFile(fileId).catch((e) => {
+          console.log('[resolve-url] getFile failed:', e.message);
+          return null;
+        });
         if (fileInfo?.file_path) {
           photoUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${fileInfo.file_path}`;
+          console.log('[resolve-url] Photo URL generated');
         }
       }
+    } else if (chat.type === 'private' && chat.id) {
+      // For bots — try getUserProfilePhotos
+      try {
+        const photos = await bot.getUserProfilePhotos(chat.id, { offset: 0, limit: 1 });
+        if (photos.total_count > 0 && photos.photos[0]?.[0]) {
+          const fileId = photos.photos[0][photos.photos[0].length - 1].file_id;
+          const fileInfo = await bot.getFile(fileId).catch(() => null);
+          if (fileInfo?.file_path) {
+            photoUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${fileInfo.file_path}`;
+            console.log('[resolve-url] Bot photo from getUserProfilePhotos');
+          }
+        }
+      } catch (e) {
+        console.log('[resolve-url] getUserProfilePhotos failed:', e.message);
+      }
     }
+
+    console.log('[resolve-url] Result:', { title: chat.title || chat.first_name, image_url: photoUrl ? 'yes' : 'null', members: memberCount });
 
     res.json({
       success: true,
