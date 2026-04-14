@@ -60,7 +60,7 @@ function initBot(token) {
     }
 
     // Welcome message with Mini App button
-    const webAppUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const webAppUrl = process.env.WEBAPP_URL || process.env.FRONTEND_URL || 'https://tonpaytask-production.up.railway.app';
     
     bot.sendMessage(chatId, 
       `👋 Привет, ${msg.from.first_name}!\n\n` +
