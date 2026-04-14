@@ -261,6 +261,16 @@ function initTables() {
   // Add image_url column to ad_tasks if not exists
   try { db.exec('ALTER TABLE ad_tasks ADD COLUMN image_url TEXT DEFAULT NULL'); } catch(e) {}
 
+  // Settings table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `);
+  // Default ad task reward
+  try { db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('ad_task_reward', '20'); } catch(e) {}
+
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_user ON task_completions(user_id)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_task_completions_task ON task_completions(task_id)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id)'); } catch(e) {}

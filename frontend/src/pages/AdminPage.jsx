@@ -15,6 +15,8 @@ export default function AdminPage({ user }) {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [toast, setToast] = useState(null);
+  const [settings, setSettings] = useState({});
+  const [savingSettings, setSavingSettings] = useState(false);
 
   // Task form state
   const [taskForm, setTaskForm] = useState({
@@ -49,6 +51,9 @@ export default function AdminPage({ user }) {
       } else if (tab === 'users') {
         const data = await api.getAdminUsers();
         setUsers(data.users);
+      } else if (tab === 'settings') {
+        const data = await api.getAdminSettings();
+        setSettings(data.settings || {});
       }
     } catch (err) {
       console.error('Admin load error:', err);
@@ -152,16 +157,17 @@ export default function AdminPage({ user }) {
 
       {/* Tabs */}
       <div className="filter-tabs mt-16">
-        {['stats', 'tasks', 'users'].map(t => (
+        {['stats', 'tasks', 'users', 'settings'].map(t => (
           <button
             key={t}
             className={`filter-tab ${tab === t ? 'active' : ''}`}
             onClick={() => { setTab(t); hapticFeedback('light'); }}
             id={`admin-tab-${t}`}
           >
-            {t === 'stats' && '📊 Статистика'}
+            {t === 'stats' && '📊 Стат'}
             {t === 'tasks' && '📋 Задания'}
-            {t === 'users' && '👥 Пользователи'}
+            {t === 'users' && '👥 Юзеры'}
+            {t === 'settings' && '⚙️ Настр.'}
           </button>
         ))}
       </div>
@@ -282,6 +288,49 @@ export default function AdminPage({ user }) {
                   <h3 className="empty-state-title">Нет пользователей</h3>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {tab === 'settings' && (
+            <div className="admin-settings stagger">
+              <div className="card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📢 Рекламные задания</h3>
+                <div className="form-group">
+                  <label className="form-label">Фиксированная награда за выполнение (Points)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="1"
+                    max="100000"
+                    value={settings.ad_task_reward || 20}
+                    onChange={e => setSettings(s => ({ ...s, ad_task_reward: e.target.value }))}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                    Эта цена будет одинаковой для всех рекламных заданий
+                  </div>
+                </div>
+                <button
+                  className="btn btn-primary mt-16"
+                  style={{ width: '100%' }}
+                  disabled={savingSettings}
+                  onClick={async () => {
+                    setSavingSettings(true);
+                    try {
+                      const res = await api.updateAdminSettings({ ad_task_reward: settings.ad_task_reward });
+                      setSettings(res.settings);
+                      showToastMsg('Настройки сохранены ✅');
+                      hapticFeedback('success');
+                    } catch (err) {
+                      showToastMsg(err.message, 'error');
+                    } finally {
+                      setSavingSettings(false);
+                    }
+                  }}
+                >
+                  {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
+                </button>
+              </div>
             </div>
           )}
         </>

@@ -61,6 +61,12 @@ export const deleteTask = (id) =>
   request(`/admin/tasks/${id}`, { method: 'DELETE' });
 export const getAdminUsers = (page = 1) =>
   request(`/admin/users?page=${page}`);
+export const getAdminSettings = () => request('/admin/settings');
+export const updateAdminSettings = (data) =>
+  request('/admin/settings', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
 
 // Ad Tasks (complete from tasks feed)
 export const completeAdTask = (id) =>
@@ -68,6 +74,7 @@ export const completeAdTask = (id) =>
 
 // Advertiser
 export const getAdBalance = () => request('/advertiser/balance');
+export const getRewardPrice = () => request('/advertiser/reward-price');
 export const adDeposit = (amount) =>
   request('/advertiser/deposit', {
     method: 'POST',

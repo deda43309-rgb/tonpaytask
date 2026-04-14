@@ -194,4 +194,48 @@ router.get('/users', (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/settings
+ * Получить настройки
+ */
+router.get('/settings', (req, res) => {
+  try {
+    const db = getDb();
+    const rows = db.prepare('SELECT * FROM settings').all();
+    const settings = {};
+    rows.forEach(r => { settings[r.key] = r.value; });
+    res.json({ settings });
+  } catch (error) {
+    console.error('Admin get settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /api/admin/settings
+ * Обновить настройки
+ */
+router.put('/settings', (req, res) => {
+  try {
+    const db = getDb();
+    const { ad_task_reward } = req.body;
+
+    if (ad_task_reward !== undefined) {
+      const val = parseInt(ad_task_reward);
+      if (val < 1 || val > 100000) {
+        return res.status(400).json({ error: 'ad_task_reward must be 1–100,000' });
+      }
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('ad_task_reward', ?)").run(String(val));
+    }
+
+    const rows = db.prepare('SELECT * FROM settings').all();
+    const settings = {};
+    rows.forEach(r => { settings[r.key] = r.value; });
+    res.json({ success: true, settings });
+  } catch (error) {
+    console.error('Admin update settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

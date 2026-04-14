@@ -62,6 +62,21 @@ router.post('/resolve-url', async (req, res) => {
 });
 
 /**
+ * GET /api/advertiser/reward-price
+ * Получить фиксированную цену за выполнение
+ */
+router.get('/reward-price', (req, res) => {
+  try {
+    const db = getDb();
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'ad_task_reward'").get();
+    res.json({ reward: parseInt(row?.value || '20') });
+  } catch (error) {
+    console.error('Get reward price error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
  * GET /api/advertiser/balance
  * Рекламный баланс пользователя
  */
@@ -143,20 +158,20 @@ router.post('/tasks', (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
-    const { title, description, url, type, reward, max_completions, image_url } = req.body;
+    const { title, description, url, type, max_completions, image_url } = req.body;
+
+    // Get fixed reward from settings
+    const rewardRow = db.prepare("SELECT value FROM settings WHERE key = 'ad_task_reward'").get();
+    const reward = parseInt(rewardRow?.value || '20');
 
     // Validation
-    if (!title || !url || !type || !reward || !max_completions) {
+    if (!title || !url || !type || !max_completions) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
     const validTypes = ['subscribe_channel', 'start_bot', 'visit_link'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({ error: 'Invalid task type' });
-    }
-
-    if (reward < 1 || reward > 10000) {
-      return res.status(400).json({ error: 'Reward must be 1–10,000' });
     }
 
     if (max_completions < 1 || max_completions > 100000) {

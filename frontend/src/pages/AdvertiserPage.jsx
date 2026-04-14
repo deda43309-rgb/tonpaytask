@@ -10,8 +10,6 @@ const TASK_TYPES = [
   { value: 'start_bot', label: '🤖 Запуск бота', icon: '🤖' },
   { value: 'visit_link', label: '🔗 Переход по ссылке', icon: '🔗' },
 ];
-
-const FIXED_REWARDS = [5, 10, 25, 50, 100];
 const DEPOSIT_AMOUNTS = [100, 500, 1000, 5000, 10000, 50000];
 
 export default function AdvertiserPage({ user }) {
@@ -19,6 +17,7 @@ export default function AdvertiserPage({ user }) {
   const [tab, setTab] = useState('tasks');
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(0);
+  const [fixedReward, setFixedReward] = useState(20);
   const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState(null);
   const [showDeposit, setShowDeposit] = useState(false);
@@ -37,7 +36,6 @@ export default function AdvertiserPage({ user }) {
     description: '',
     url: '',
     type: 'subscribe_channel',
-    reward: 10,
     max_completions: 100,
     image_url: null,
   });
@@ -45,14 +43,16 @@ export default function AdvertiserPage({ user }) {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [balRes, tasksRes, statsRes] = await Promise.all([
+      const [balRes, tasksRes, statsRes, rewardRes] = await Promise.all([
         api.getAdBalance(),
         api.getAdTasks(),
         api.getAdStats(),
+        api.getRewardPrice(),
       ]);
       setBalance(balRes.ad_balance);
       setTasks(tasksRes.tasks);
       setStats(statsRes);
+      setFixedReward(rewardRes.reward);
     } catch (err) {
       console.error('Load advertiser data error:', err);
     } finally {
@@ -138,7 +138,7 @@ export default function AdvertiserPage({ user }) {
       const res = await api.createAdTask(form);
       setBalance(res.ad_balance);
       setTasks(prev => [res.task, ...prev]);
-      setForm({ title: '', description: '', url: '', type: 'subscribe_channel', reward: 10, max_completions: 100, image_url: null });
+      setForm({ title: '', description: '', url: '', type: 'subscribe_channel', max_completions: 100, image_url: null });
       setResolved(null);
       setTab('tasks');
       hapticFeedback('success');
@@ -174,7 +174,7 @@ export default function AdvertiserPage({ user }) {
     }
   };
 
-  const totalCost = form.reward * form.max_completions;
+  const totalCost = fixedReward * form.max_completions;
 
   if (loading) return <Loader text="Загрузка..." />;
 
@@ -349,20 +349,12 @@ export default function AdvertiserPage({ user }) {
                 />
               </div>
 
-              {/* Fixed reward selector */}
+              {/* Fixed reward info */}
               <div className="adv-form-group">
-                <label className="adv-form-label">Награда за выполнение (фиксированная)</label>
-                <div className="adv-reward-grid">
-                  {FIXED_REWARDS.map(r => (
-                    <button
-                      type="button"
-                      key={r}
-                      className={`adv-reward-btn ${form.reward === r ? 'active' : ''}`}
-                      onClick={() => { hapticFeedback('light'); setForm(f => ({ ...f, reward: r })); }}
-                    >
-                      {r} pts
-                    </button>
-                  ))}
+                <label className="adv-form-label">Награда за выполнение</label>
+                <div className="adv-fixed-reward-info">
+                  <span className="adv-fixed-reward-value">{fixedReward} pts</span>
+                  <span className="adv-fixed-reward-note">фиксированная цена</span>
                 </div>
               </div>
 
@@ -384,7 +376,7 @@ export default function AdvertiserPage({ user }) {
               <div className="adv-cost-preview">
                 <div className="adv-cost-preview-value">{totalCost.toLocaleString()} pts</div>
                 <div className="adv-cost-preview-label">
-                  {form.reward} pts × {form.max_completions} выполнений
+                  {fixedReward} pts × {form.max_completions} выполнений
                   {totalCost > balance && <span style={{ color: '#ff3b30', marginLeft: 8 }}>⚠ Недостаточно средств</span>}
                 </div>
               </div>
