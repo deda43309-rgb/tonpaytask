@@ -1,0 +1,140 @@
+.referral-page {
+  padding-top: 20px;
+}
+
+.referral-invite-card {
+  text-align: center;
+  padding: 28px 20px 24px;
+}
+
+.referral-invite-icon {
+  font-size: 48px;
+  animation: bounce 2s ease-in-out infinite;
+  margin-bottom: 12px;
+}
+
+.referral-invite-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.referral-invite-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.referral-link-box {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.referral-link-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.referral-link-row {
+  margin-top: 6px;
+}
+
+.referral-link-value {
+  font-size: 13px;
+  color: var(--accent-secondary);
+  word-break: break-all;
+  font-weight: 500;
+}
+
+.referral-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.referral-buttons .btn {
+  flex: 1;
+}
+
+/* Stats */
+.referral-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.referral-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 12px;
+  gap: 4px;
+}
+
+.referral-stat-icon {
+  font-size: 24px;
+}
+
+.referral-stat-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.referral-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* List */
+.referral-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.referral-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.referral-item-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.referral-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.referral-item-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.referral-item-date {
+  font-size: 12px;
+  color: var(--text-muted);
+}

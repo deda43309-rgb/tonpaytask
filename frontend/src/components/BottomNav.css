@@ -1,0 +1,72 @@
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding-bottom: var(--safe-bottom);
+  background: rgba(10, 10, 26, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid var(--border);
+}
+
+.bottom-nav-inner {
+  display: flex;
+  justify-content: space-around;
+  max-width: 480px;
+  margin: 0 auto;
+  height: var(--nav-height);
+  padding: 8px 4px;
+}
+
+.nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  position: relative;
+  border-radius: var(--radius-sm);
+  transition: all 0.25s ease;
+  padding: 6px 4px;
+}
+
+.nav-tab:active {
+  transform: scale(0.92);
+}
+
+.nav-tab-icon {
+  font-size: 22px;
+  line-height: 1;
+  transition: transform 0.25s ease;
+}
+
+.nav-tab.active .nav-tab-icon {
+  transform: scale(1.15);
+}
+
+.nav-tab-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: color 0.25s ease;
+  letter-spacing: 0.02em;
+}
+
+.nav-tab.active .nav-tab-label {
+  color: var(--accent-primary);
+}
+
+.nav-tab-indicator {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--accent-gradient);
+  animation: scaleIn 0.25s ease-out;
+}

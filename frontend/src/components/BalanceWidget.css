@@ -1,0 +1,94 @@
+.balance-widget {
+  text-align: center;
+  padding: 28px 20px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.balance-widget::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent-gradient);
+}
+
+.balance-top {
+  margin-bottom: 20px;
+}
+
+.balance-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.balance-amount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.balance-icon {
+  font-size: 32px;
+  animation: coinPulse 2s ease-in-out infinite;
+}
+
+.balance-value {
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.balance-currency {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  align-self: flex-end;
+  padding-bottom: 4px;
+}
+
+.balance-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.balance-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.balance-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.balance-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.balance-stat-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+}
