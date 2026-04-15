@@ -184,6 +184,40 @@ router.post('/tasks', async (req, res) => {
       return res.status(400).json({ error: urlCheck.error });
     }
 
+    // For subscribe_channel — check bot is admin in the channel
+    if (type === 'subscribe_channel') {
+      const bot = getBot();
+      if (bot) {
+        const tmeMatch = url.trim().match(/t\.me\/([^/?]+)/);
+        const username = tmeMatch ? tmeMatch[1] : null;
+        if (username && !username.startsWith('+') && username !== 'joinchat') {
+          try {
+            const botInfo = await bot.getMe();
+            const member = await bot.getChatMember('@' + username, botInfo.id);
+            if (!['administrator', 'creator'].includes(member.status)) {
+              return res.status(400).json({ 
+                error: '🤖 Бот должен быть администратором канала!\n\n' +
+                  '📋 Как добавить:\n' +
+                  '1. Откройте канал @' + username + '\n' +
+                  '2. Настройки → Администраторы → Добавить администратора\n' +
+                  '3. Найдите бота @' + botInfo.username + '\n' +
+                  '4. Дайте минимальные права и сохраните\n' +
+                  '5. Попробуйте создать задание снова'
+              });
+            }
+          } catch (e) {
+            return res.status(400).json({ 
+              error: '❌ Не удалось проверить канал @' + username + '.\n\n' +
+                '🤖 Убедитесь что бот добавлен как администратор:\n' +
+                '1. Откройте канал → Настройки → Администраторы\n' +
+                '2. Добавьте бота как администратора\n' +
+                '3. Попробуйте снова'
+            });
+          }
+        }
+      }
+    }
+
     if (max_completions < 1 || max_completions > 100000) {
       return res.status(400).json({ error: 'Max completions must be 1–100,000' });
     }
