@@ -51,7 +51,7 @@ function initBot(token) {
             // Notify referrer
             try {
               bot.sendMessage(referrer.id,
-                `🎉 Новый реферал! ${msg.from.first_name} присоединился по вашей ссылке.\n+${bonus} Points!`
+                `🎉 Новый реферал! ${msg.from.first_name} присоединился по вашей ссылке.\n+${bonus} TON!`
               );
             } catch (e) {
               console.error('Failed to notify referrer:', e);
@@ -69,7 +69,7 @@ function initBot(token) {
     bot.sendMessage(chatId,
       `👋 Привет, ${msg.from.first_name}!\n\n` +
       `💰 Добро пожаловать в *TonPayTask*!\n\n` +
-      `Выполняй простые задания и зарабатывай Points:\n` +
+      `Выполняй простые задания и зарабатывай TON:\n` +
       `🔔 Подписывайся на каналы\n` +
       `🤖 Запускай ботов\n` +
       `🔗 Переходи по ссылкам\n` +
@@ -94,7 +94,7 @@ function initBot(token) {
 
       if (user) {
         bot.sendMessage(msg.chat.id,
-          `💰 Ваш баланс: *${user.balance} Points*\n` +
+          `💰 Ваш баланс: *${user.balance} TON*\n` +
           `✅ Заданий выполнено: ${user.tasks_completed}`,
           { parse_mode: 'Markdown' }
         );

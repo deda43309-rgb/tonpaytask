@@ -73,7 +73,7 @@ export default function TaskCard({ task, onComplete }) {
         </div>
         <div className="task-card-reward">
           <span className="task-reward-value">+{task.reward}</span>
-          <span className="task-reward-label">Points</span>
+          <span className="task-reward-label">TON</span>
         </div>
       </div>
 

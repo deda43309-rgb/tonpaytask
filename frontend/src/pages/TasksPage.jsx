@@ -46,7 +46,7 @@ export default function TasksPage({ onUserUpdate }) {
       }));
 
       // Show reward toast
-      showToast(`+${result.reward} Points! 🎉`, 'success');
+      showToast(`+${result.reward} TON! 🎉`, 'success');
 
       // Update user balance
       if (onUserUpdate) {

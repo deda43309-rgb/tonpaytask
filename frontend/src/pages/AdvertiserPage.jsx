@@ -236,7 +236,7 @@ export default function AdvertiserPage({ user }) {
                         <div className="adv-task-info">
                           <div className="adv-task-title">{task.title}</div>
                           <div className="adv-task-meta">
-                            <span>{task.reward} pts/выполнение</span>
+                            <span>{task.reward} TON/выполнение</span>
                             <span className={`adv-task-status ${task.status}`}>{
                               task.status === 'active' ? '🟢 Активно' :
                               task.status === 'paused' ? '⏸ Пауза' : '✅ Завершено'
@@ -250,7 +250,7 @@ export default function AdvertiserPage({ user }) {
                         </div>
                         <div className="adv-task-progress-text">
                           <span>{task.current_completions} / {task.max_completions}</span>
-                          <span>−{spent.toLocaleString()} pts</span>
+                          <span>−{spent.toLocaleString()} TON</span>
                         </div>
                       </div>
                       {task.status !== 'completed' && (
@@ -356,8 +356,8 @@ export default function AdvertiserPage({ user }) {
               <div className="adv-form-group">
                 <label className="adv-form-label">Цена за 1 выполнение</label>
                 <div className="adv-fixed-reward-info">
-                  <span className="adv-fixed-reward-value">{adPrice} pts</span>
-                  <span className="adv-fixed-reward-note">исполнитель получит {userReward} pts</span>
+                  <span className="adv-fixed-reward-value">{adPrice} TON</span>
+                  <span className="adv-fixed-reward-note">исполнитель получит {userReward} TON</span>
                 </div>
               </div>
 
@@ -377,9 +377,9 @@ export default function AdvertiserPage({ user }) {
 
               {/* Cost preview */}
               <div className="adv-cost-preview">
-                <div className="adv-cost-preview-value">{totalCost.toLocaleString()} pts</div>
+                <div className="adv-cost-preview-value">{totalCost.toLocaleString()} TON</div>
                 <div className="adv-cost-preview-label">
-                  {adPrice} pts × {form.max_completions} выполнений
+                  {adPrice} TON × {form.max_completions} выполнений
                   {totalCost > balance && <span style={{ color: '#ff3b30', marginLeft: 8 }}>⚠ Недостаточно средств</span>}
                 </div>
               </div>
@@ -390,7 +390,7 @@ export default function AdvertiserPage({ user }) {
                 style={{ width: '100%', background: 'linear-gradient(135deg, #f5a623, #e09500)' }}
                 disabled={creating || totalCost > balance || !form.title || !form.url}
               >
-                {creating ? '⏳ Создание...' : `📢 Создать задание (−${totalCost.toLocaleString()} pts)`}
+                {creating ? '⏳ Создание...' : `📢 Создать задание (−${totalCost.toLocaleString()} TON)`}
               </button>
             </form>
           </div>
@@ -462,7 +462,7 @@ export default function AdvertiserPage({ user }) {
                 onClick={handleDeposit}
                 disabled={depositing}
               >
-                {depositing ? '⏳...' : `+${depositAmount.toLocaleString()} pts`}
+                {depositing ? '⏳...' : `+${depositAmount.toLocaleString()} TON`}
               </button>
             </div>
           </div>

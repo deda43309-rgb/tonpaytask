@@ -279,7 +279,7 @@ export default function AdminPage({ user }) {
                       <div className="admin-task-info">
                         <span className="admin-task-title">{task.title}</span>
                         <span className="admin-task-meta">
-                          +{task.reward} Points · {task.current_completions} выполнений
+                          +{task.reward} TON · {task.current_completions} выполнений
                         </span>
                       </div>
                       <span className={`badge ${task.is_active ? 'badge-success' : 'badge-danger'}`}>
@@ -341,7 +341,7 @@ export default function AdminPage({ user }) {
               {/* Admin Balance */}
               <div className="card" style={{ padding: 20, textAlign: 'center', background: 'linear-gradient(135deg, rgba(52, 199, 89, 0.08), rgba(52, 199, 89, 0.02))', border: '1px solid rgba(52, 199, 89, 0.15)' }}>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>💰 Баланс системы</div>
-                <div style={{ fontSize: 32, fontWeight: 800, color: revenue.admin_balance >= 0 ? '#34c759' : '#ff3b30' }}>{revenue.admin_balance.toLocaleString()} pts</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: revenue.admin_balance >= 0 ? '#34c759' : '#ff3b30' }}>{revenue.admin_balance.toLocaleString()} TON</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
                   📈 Комиссия: +{revenue.commission.total.toLocaleString()} · 📉 Расходы заданий: −{revenue.task_expenses.toLocaleString()}
                 </div>
@@ -420,7 +420,7 @@ export default function AdminPage({ user }) {
               <div className="card" style={{ padding: 20 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🏦 Баланс системы</h3>
                 <div className="form-group">
-                  <label className="form-label">💰 Системный баланс (Points)</label>
+                  <label className="form-label">💰 Системный баланс (TON)</label>
                   <input
                     className="input"
                     type="number"
@@ -502,8 +502,8 @@ export default function AdminPage({ user }) {
                 </div>
 
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px 0', borderTop: '1px solid var(--border)', marginTop: 8 }}>
-                  📊 Итого: {parseInt(settings.ad_user_reward || 10) + parseInt(settings.ad_ref_reward || 2) + parseInt(settings.ad_commission || 8)} pts
-                  {' '}из {settings.ad_price || 20} pts
+                  📊 Итого: {parseInt(settings.ad_user_reward || 10) + parseInt(settings.ad_ref_reward || 2) + parseInt(settings.ad_commission || 8)} TON
+                  {' '}из {settings.ad_price || 20} TON
                   {parseInt(settings.ad_user_reward || 10) + parseInt(settings.ad_ref_reward || 2) + parseInt(settings.ad_commission || 8) !== parseInt(settings.ad_price || 20) && (
                     <span style={{ color: '#ff3b30', fontWeight: 700 }}> ⚠ Суммы не совпадают!</span>
                   )}
@@ -686,7 +686,7 @@ export default function AdminPage({ user }) {
               </div>
               {taskForm.max_completions > 0 && taskForm.reward > 0 && (
                 <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-                  💰 Стоимость: <b style={{ color: 'var(--accent-primary)' }}>{taskForm.reward * taskForm.max_completions} Points</b>
+                  💰 Стоимость: <b style={{ color: 'var(--accent-primary)' }}>{taskForm.reward * taskForm.max_completions} TON</b>
                   {' '}({taskForm.max_completions} × {taskForm.reward})
                 </div>
               )}

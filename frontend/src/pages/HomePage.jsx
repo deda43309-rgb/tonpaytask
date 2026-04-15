@@ -88,7 +88,7 @@ export default function HomePage({ user, onUserUpdate }) {
 
           {showBonus && bonusResult && (
             <div className="daily-bonus-result">
-              <span className="bonus-amount">+{bonusResult.bonus} Points</span>
+              <span className="bonus-amount">+{bonusResult.bonus} TON</span>
               <span className="bonus-streak">🔥 Серия: {bonusResult.streak} дн.</span>
             </div>
           )}

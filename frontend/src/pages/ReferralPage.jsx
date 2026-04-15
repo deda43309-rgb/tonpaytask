@@ -58,12 +58,12 @@ export default function ReferralPage({ user }) {
 
   const handleShare = () => {
     const link = getReferralLink();
-    const text = `🎮 Присоединяйся к TonPayTask и зарабатывай Points!\n\n${link}`;
+    const text = `🎮 Присоединяйся к TonPayTask и зарабатывай TON!\n\n${link}`;
     hapticFeedback('medium');
     
     const tg = window.Telegram?.WebApp;
     if (tg) {
-      tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('🎮 Присоединяйся к TonPayTask и зарабатывай Points!')}`);
+      tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('🎮 Присоединяйся к TonPayTask и зарабатывай TON!')}`);
     } else {
       window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`);
     }
@@ -82,7 +82,7 @@ export default function ReferralPage({ user }) {
         <div className="referral-invite-icon">🎁</div>
         <h2 className="referral-invite-title">Приглашай друзей</h2>
         <p className="referral-invite-text">
-          Получайте по <strong>100 Points</strong> за каждого приглашённого друга — и вы, и ваш друг!
+          Получайте по <strong>100 TON</strong> за каждого приглашённого друга — и вы, и ваш друг!
         </p>
 
         <div className="referral-link-box mt-16">

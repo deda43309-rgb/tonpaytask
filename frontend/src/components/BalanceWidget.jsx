@@ -8,7 +8,7 @@ export default function BalanceWidget({ balance = 0, totalEarned = 0, tasksCompl
         <div className="balance-amount">
           <span className="balance-icon">💎</span>
           <span className="balance-value">{balance.toLocaleString()}</span>
-          <span className="balance-currency">Points</span>
+          <span className="balance-currency">TON</span>
         </div>
       </div>
       <div className="balance-stats">
