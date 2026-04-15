@@ -333,22 +333,35 @@ export default function AdvertiserPage({ user }) {
                     )}
                     {form.type === 'subscribe_channel' && resolved.bot_is_admin === false && resolved.bot_username && (
                       <div style={{ marginTop: 6 }}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText('@' + resolved.bot_username);
-                            alert('Скопировано: @' + resolved.bot_username);
-                          }}
-                          style={{
-                            padding: '4px 10px', fontSize: 11, borderRadius: 6,
-                            border: '1px solid rgba(255,149,0,0.4)', background: 'rgba(255,149,0,0.1)',
-                            color: '#ff9500', cursor: 'pointer', fontWeight: 600
-                          }}
-                        >
-                          📋 Скопировать @{resolved.bot_username}
-                        </button>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText('@' + resolved.bot_username);
+                              alert('Скопировано: @' + resolved.bot_username);
+                            }}
+                            style={{
+                              padding: '4px 10px', fontSize: 11, borderRadius: 6,
+                              border: '1px solid rgba(255,149,0,0.4)', background: 'rgba(255,149,0,0.1)',
+                              color: '#ff9500', cursor: 'pointer', fontWeight: 600
+                            }}
+                          >
+                            📋 Скопировать @{resolved.bot_username}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => resolveUrl(form.url, form.type)}
+                            style={{
+                              padding: '4px 10px', fontSize: 11, borderRadius: 6,
+                              border: '1px solid rgba(52,199,89,0.4)', background: 'rgba(52,199,89,0.1)',
+                              color: '#34c759', cursor: 'pointer', fontWeight: 600
+                            }}
+                          >
+                            🔄 Перепроверить
+                          </button>
+                        </div>
                         <div style={{ marginTop: 4, fontSize: 11, color: '#888', lineHeight: 1.4 }}>
-                          Добавьте бота в администраторы канала и обновите ссылку
+                          Добавьте бота в администраторы канала и нажмите «Перепроверить»
                         </div>
                       </div>
                     )}
