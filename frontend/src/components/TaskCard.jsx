@@ -70,6 +70,7 @@ export default function TaskCard({ task, onComplete }) {
           <div className="task-card-meta">
             <span className={`badge badge-${typeInfo.color}`}>{typeInfo.label}</span>
             {task.is_ad ? <span className="badge" style={{ background: 'rgba(245,166,35,0.15)', color: '#f5a623' }}>📢 Реклама</span> : null}
+            {task.is_own ? <span className="badge" style={{ background: 'rgba(90,200,250,0.15)', color: '#5ac8fa' }}>👤 Ваше</span> : null}
           </div>
         </div>
         <div className="task-card-reward">
@@ -78,7 +79,7 @@ export default function TaskCard({ task, onComplete }) {
         </div>
       </div>
 
-      {!isCompleted && (
+      {!isCompleted && !task.is_own && (
         <div className="task-card-actions">
           {!started ? (
             <button className="btn btn-primary btn-block btn-sm" onClick={handleStart}>
@@ -95,6 +96,12 @@ export default function TaskCard({ task, onComplete }) {
               {loading ? '⏳ Проверка...' : timer > 0 ? `⏱ ${timer} сек...` : '✅ Проверить'}
             </button>
           )}
+        </div>
+      )}
+
+      {!isCompleted && task.is_own && (
+        <div className="task-card-done">
+          <span className="badge" style={{ background: 'rgba(90,200,250,0.1)', color: '#5ac8fa', fontSize: 12 }}>Вы не можете выполнить своё задание</span>
         </div>
       )}
 
