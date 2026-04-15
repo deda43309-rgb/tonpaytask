@@ -10,11 +10,16 @@ async function checkAndPayReferralBonus(userId) {
   const db = getDb();
 
   try {
+    console.log(`🔍 [RefBonus] Checking referral bonus for user ${userId}`);
+
     // Check if user has a referrer
     const user = await db.get('SELECT referred_by FROM users WHERE id = ?', userId);
     if (!user || !user.referred_by) {
-      return; // No referrer
+      console.log(`🔍 [RefBonus] User ${userId} has no referrer, skipping`);
+      return;
     }
+
+    console.log(`🔍 [RefBonus] User ${userId} referred by ${user.referred_by}`);
 
     // Check if bonus already paid (referral record with bonus > 0)
     const existingRef = await db.get(
@@ -22,35 +27,32 @@ async function checkAndPayReferralBonus(userId) {
       userId
     );
 
-    if (existingRef && existingRef.bonus > 0) {
-      return; // Bonus already paid
-    }
+    console.log(`🔍 [RefBonus] Existing referral record:`, JSON.stringify(existingRef));
 
-    // Check if user completed at least 1 task (first activity)
-    const taskCount = await db.get(
-      `SELECT 
-        (SELECT COUNT(*) FROM task_completions WHERE user_id = ?) +
-        (SELECT COUNT(*) FROM ad_task_completions WHERE user_id = ?) as total`,
-      userId, userId
-    );
-
-    if (!taskCount || taskCount.total < 1) {
-      return; // No completed tasks yet
+    if (existingRef && parseFloat(existingRef.bonus) > 0) {
+      console.log(`🔍 [RefBonus] Bonus already paid (${existingRef.bonus}), skipping`);
+      return;
     }
 
     // Get bonus setting
     const bonusRow = await db.get("SELECT value FROM settings WHERE key = 'referral_bonus'");
     const bonus = parseFloat(bonusRow?.value) || 100;
+    console.log(`🔍 [RefBonus] Bonus amount from settings: ${bonus}`);
 
-    if (bonus <= 0) return;
+    if (bonus <= 0) {
+      console.log(`🔍 [RefBonus] Bonus is 0 or negative, skipping`);
+      return;
+    }
 
     // Check admin balance
     const balRow = await db.get("SELECT value FROM settings WHERE key = 'admin_balance'");
     const adminBalance = parseFloat(balRow?.value) || 0;
     const totalCost = bonus * 2; // Both users get bonus
 
+    console.log(`🔍 [RefBonus] Admin balance: ${adminBalance}, total cost: ${totalCost}`);
+
     if (adminBalance < totalCost) {
-      console.log(`⚠️ Referral bonus skipped — admin balance (${adminBalance}) < cost (${totalCost})`);
+      console.log(`⚠️ [RefBonus] Admin balance (${adminBalance}) < cost (${totalCost}), skipping`);
       return;
     }
 
@@ -90,7 +92,7 @@ async function checkAndPayReferralBonus(userId) {
       );
     });
 
-    console.log(`🎁 Referral bonus paid: ${bonus} TON to referrer ${referrerId} and user ${userId}`);
+    console.log(`🎁 [RefBonus] SUCCESS! Paid ${bonus} TON to referrer ${referrerId} and user ${userId}`);
 
     // Notify referrer via bot
     const bot = getBot();
@@ -104,11 +106,11 @@ async function checkAndPayReferralBonus(userId) {
           `Вам начислено: +${bonus} TON 💎`
         );
       } catch (e) {
-        console.error('Failed to notify referrer about bonus:', e);
+        console.error('[RefBonus] Failed to notify referrer:', e);
       }
     }
   } catch (error) {
-    console.error('Referral bonus check error:', error);
+    console.error('[RefBonus] ERROR:', error);
   }
 }
 
