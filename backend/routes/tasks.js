@@ -49,7 +49,11 @@ router.get('/', async (req, res) => {
 
     console.log(`Tasks for user ${userId}: ${tasks.length} regular, ${adTasks.length} ad`);
 
-    res.json({ tasks: [...tasks, ...adTasks] });
+    // Get penalty setting for subscribe tasks
+    const penaltyRow = await db.get("SELECT value FROM settings WHERE key = 'unsub_penalty'");
+    const unsub_penalty = parseFloat(penaltyRow?.value) || 0;
+
+    res.json({ tasks: [...tasks, ...adTasks], unsub_penalty });
   } catch (error) {
     console.error('Get tasks error:', error);
     res.status(500).json({ error: 'Internal server error' });

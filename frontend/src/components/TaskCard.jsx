@@ -9,7 +9,7 @@ const typeLabels = {
   visit_link: { label: 'Ссылка', color: 'info' },
 };
 
-export default function TaskCard({ task, onComplete }) {
+export default function TaskCard({ task, onComplete, penalty = 0 }) {
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [started, setStarted] = useState(false);
@@ -72,6 +72,11 @@ export default function TaskCard({ task, onComplete }) {
             {task.is_ad ? <span className="badge" style={{ background: 'rgba(245,166,35,0.15)', color: '#f5a623' }}>📢 Реклама</span> : null}
             {task.is_own ? <span className="badge" style={{ background: 'rgba(90,200,250,0.15)', color: '#5ac8fa' }}>👤 Ваше</span> : null}
           </div>
+          {task.type === 'subscribe_channel' && penalty > 0 && (
+            <div style={{ fontSize: 11, color: '#ff9500', marginTop: 4 }}>
+              ⚠️ Штраф за отписку: -{formatTON(penalty)} TON
+            </div>
+          )}
         </div>
         <div className="task-card-reward">
           <span className="task-reward-value">+{formatTON(task.reward)}</span>
