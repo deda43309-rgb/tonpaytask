@@ -41,7 +41,8 @@ router.post('/login', async (req, res) => {
         const referrer = await db.get('SELECT * FROM users WHERE referral_code = ?', referrerCode);
 
         if (referrer && referrer.id !== user.id) {
-          const bonus = parseInt(process.env.REFERRAL_BONUS) || 100;
+          const bonusRow = await db.get("SELECT value FROM settings WHERE key = 'referral_bonus'");
+          const bonus = parseFloat(bonusRow?.value) || 100;
 
           await db.run('UPDATE users SET referred_by = ? WHERE id = ?', referrer.id, user.id);
           await db.run('UPDATE users SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?', bonus, bonus, referrer.id);

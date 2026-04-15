@@ -88,7 +88,8 @@ router.post('/daily-bonus', async (req, res) => {
       }
     }
 
-    const baseBonus = parseInt(process.env.DAILY_BONUS) || 50;
+    const dailyBonusRow = await db.get("SELECT value FROM settings WHERE key = 'daily_bonus'");
+    const baseBonus = parseFloat(dailyBonusRow?.value) || 50;
     const bonus = baseBonus * streak; // Streak multiplier
 
     // Claim bonus (transaction)

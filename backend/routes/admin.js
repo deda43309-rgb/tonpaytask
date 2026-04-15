@@ -246,7 +246,7 @@ router.get('/settings', async (req, res) => {
 router.put('/settings', async (req, res) => {
   try {
     const db = getDb();
-    const fields = ['ad_price', 'ad_user_reward', 'ad_ref_reward', 'ad_commission', 'sub_check_hours', 'unsub_penalty'];
+    const fields = ['ad_price', 'ad_user_reward', 'ad_ref_reward', 'ad_commission', 'sub_check_hours', 'unsub_penalty', 'referral_bonus', 'daily_bonus'];
 
     // If admin_balance is being changed, require PIN
     if (req.body.admin_balance !== undefined) {

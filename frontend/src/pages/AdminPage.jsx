@@ -525,6 +525,8 @@ export default function AdminPage({ user }) {
                         ad_commission: settings.ad_commission,
                         sub_check_hours: settings.sub_check_hours,
                         unsub_penalty: settings.unsub_penalty,
+                        referral_bonus: settings.referral_bonus,
+                        daily_bonus: settings.daily_bonus,
                       });
                       setSettings(res.settings);
                       showToastMsg('Настройки сохранены ✅');
@@ -538,6 +540,38 @@ export default function AdminPage({ user }) {
                 >
                   {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
                 </button>
+              </div>
+
+              <div className="card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🎁 Бонусы</h3>
+                
+                <div className="form-group">
+                  <label className="form-label">👥 Реферальный бонус (TON)</label>
+                  <input
+                    className="input"
+                    type="text"
+                    inputMode="decimal"
+                    value={settings.referral_bonus ?? ''}
+                    onChange={e => setSettings(s => ({ ...s, referral_bonus: e.target.value }))}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Бонус получают оба — пригласивший и приглашённый
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">🌟 Ежедневный бонус (TON)</label>
+                  <input
+                    className="input"
+                    type="text"
+                    inputMode="decimal"
+                    value={settings.daily_bonus ?? ''}
+                    onChange={e => setSettings(s => ({ ...s, daily_bonus: e.target.value }))}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Базовый бонус × стрик (макс 7 дней). Напр.: 0.001 × 3 = 0.003 TON
+                  </div>
+                </div>
               </div>
 
               <div className="card" style={{ padding: 20 }}>
