@@ -424,8 +424,8 @@ export default function AdminPage({ user }) {
                   <label className="form-label">💰 Системный баланс (TON)</label>
                   <input
                     className="input"
-                    type="number"
-                    step="0.0001"
+                    type="text"
+                    inputMode="decimal"
                     value={settings.admin_balance || 0}
                     onChange={e => setSettings({ ...settings, admin_balance: e.target.value })}
                   />
@@ -463,9 +463,8 @@ export default function AdminPage({ user }) {
                   <label className="form-label">💰 Цена для рекламодателя (за 1 выполнение)</label>
                   <input
                     className="input"
-                    type="number"
-                    step="0.0001"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     value={settings.ad_price || 20}
                     onChange={e => setSettings(s => ({ ...s, ad_price: e.target.value }))}
                   />
@@ -475,9 +474,8 @@ export default function AdminPage({ user }) {
                   <label className="form-label">🎯 Награда исполнителю</label>
                   <input
                     className="input"
-                    type="number"
-                    step="0.0001"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     value={settings.ad_user_reward || 10}
                     onChange={e => setSettings(s => ({ ...s, ad_user_reward: e.target.value }))}
                   />
@@ -487,9 +485,8 @@ export default function AdminPage({ user }) {
                   <label className="form-label">👥 Реферальная награда</label>
                   <input
                     className="input"
-                    type="number"
-                    step="0.0001"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     value={settings.ad_ref_reward || 2}
                     onChange={e => setSettings(s => ({ ...s, ad_ref_reward: e.target.value }))}
                   />
@@ -499,9 +496,8 @@ export default function AdminPage({ user }) {
                   <label className="form-label">🏦 Комиссия системы</label>
                   <input
                     className="input"
-                    type="number"
-                    step="0.0001"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     value={settings.ad_commission || 8}
                     onChange={e => setSettings(s => ({ ...s, ad_commission: e.target.value }))}
                   />
@@ -566,9 +562,8 @@ export default function AdminPage({ user }) {
                   <label className="form-label">💸 Штраф за отписку (TON)</label>
                   <input
                     className="input"
-                    type="number"
-                    step="0.0001"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     value={settings.unsub_penalty || 50}
                     onChange={e => setSettings(s => ({ ...s, unsub_penalty: e.target.value }))}
                   />

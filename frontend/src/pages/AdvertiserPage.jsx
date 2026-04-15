@@ -116,11 +116,12 @@ export default function AdvertiserPage({ user }) {
   };
 
   const handleDeposit = async () => {
-    if (depositing || depositAmount <= 0) return;
+    const amount = parseFloat(depositAmount);
+    if (depositing || !amount || amount <= 0) return;
     setDepositing(true);
     hapticFeedback('medium');
     try {
-      const res = await api.adDeposit(depositAmount);
+      const res = await api.adDeposit(amount);
       setBalance(res.ad_balance);
       setShowDeposit(false);
       hapticFeedback('success');
@@ -446,11 +447,10 @@ export default function AdvertiserPage({ user }) {
             </div>
             <input
               className="input"
-              type="number"
-              min="1"
-              max="1000000"
+              type="text"
+              inputMode="decimal"
               value={depositAmount}
-              onChange={e => setDepositAmount(Math.max(0.0001, parseFloat(e.target.value) || 0.0001))}
+              onChange={e => setDepositAmount(e.target.value)}
               placeholder="Или введите сумму"
             />
             <div className="adv-modal-actions">
