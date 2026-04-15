@@ -572,6 +572,30 @@ export default function AdminPage({ user }) {
                     Базовый бонус × стрик (макс 7 дней). Напр.: 0.001 × 3 = 0.003 TON
                   </div>
                 </div>
+
+                <button
+                  className="btn btn-primary mt-16"
+                  style={{ width: '100%' }}
+                  disabled={savingSettings}
+                  onClick={async () => {
+                    setSavingSettings(true);
+                    try {
+                      const res = await api.updateAdminSettings({
+                        referral_bonus: settings.referral_bonus,
+                        daily_bonus: settings.daily_bonus,
+                      });
+                      setSettings(res.settings);
+                      showToastMsg('Бонусы сохранены ✅');
+                      hapticFeedback('success');
+                    } catch (err) {
+                      showToastMsg(err.message, 'error');
+                    } finally {
+                      setSavingSettings(false);
+                    }
+                  }}
+                >
+                  {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
+                </button>
               </div>
 
               <div className="card" style={{ padding: 20 }}>
@@ -605,6 +629,30 @@ export default function AdminPage({ user }) {
                     Если юзер отписался — с баланса списывается штраф и отправляется уведомление
                   </div>
                 </div>
+
+                <button
+                  className="btn btn-primary mt-16"
+                  style={{ width: '100%' }}
+                  disabled={savingSettings}
+                  onClick={async () => {
+                    setSavingSettings(true);
+                    try {
+                      const res = await api.updateAdminSettings({
+                        sub_check_hours: settings.sub_check_hours,
+                        unsub_penalty: settings.unsub_penalty,
+                      });
+                      setSettings(res.settings);
+                      showToastMsg('Настройки подписок сохранены ✅');
+                      hapticFeedback('success');
+                    } catch (err) {
+                      showToastMsg(err.message, 'error');
+                    } finally {
+                      setSavingSettings(false);
+                    }
+                  }}
+                >
+                  {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
+                </button>
               </div>
 
               <div className="card" style={{ padding: 20, border: '1px solid rgba(239,68,68,0.3)' }}>
