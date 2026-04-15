@@ -426,7 +426,7 @@ export default function AdminPage({ user }) {
                     className="input"
                     type="text"
                     inputMode="decimal"
-                    value={settings.admin_balance || 0}
+                    value={settings.admin_balance ?? ''}
                     onChange={e => setSettings({ ...settings, admin_balance: e.target.value })}
                   />
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
@@ -465,7 +465,7 @@ export default function AdminPage({ user }) {
                     className="input"
                     type="text"
                     inputMode="decimal"
-                    value={settings.ad_price || 20}
+                    value={settings.ad_price ?? ''}
                     onChange={e => setSettings(s => ({ ...s, ad_price: e.target.value }))}
                   />
                 </div>
@@ -476,7 +476,7 @@ export default function AdminPage({ user }) {
                     className="input"
                     type="text"
                     inputMode="decimal"
-                    value={settings.ad_user_reward || 10}
+                    value={settings.ad_user_reward ?? ''}
                     onChange={e => setSettings(s => ({ ...s, ad_user_reward: e.target.value }))}
                   />
                 </div>
@@ -487,7 +487,7 @@ export default function AdminPage({ user }) {
                     className="input"
                     type="text"
                     inputMode="decimal"
-                    value={settings.ad_ref_reward || 2}
+                    value={settings.ad_ref_reward ?? ''}
                     onChange={e => setSettings(s => ({ ...s, ad_ref_reward: e.target.value }))}
                   />
                 </div>
@@ -498,7 +498,7 @@ export default function AdminPage({ user }) {
                     className="input"
                     type="text"
                     inputMode="decimal"
-                    value={settings.ad_commission || 8}
+                    value={settings.ad_commission ?? ''}
                     onChange={e => setSettings(s => ({ ...s, ad_commission: e.target.value }))}
                   />
                 </div>
@@ -550,7 +550,7 @@ export default function AdminPage({ user }) {
                     type="number"
                     min="1"
                     max="720"
-                    value={settings.sub_check_hours || 72}
+                    value={settings.sub_check_hours ?? ''}
                     onChange={e => setSettings(s => ({ ...s, sub_check_hours: e.target.value }))}
                   />
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
@@ -564,7 +564,7 @@ export default function AdminPage({ user }) {
                     className="input"
                     type="text"
                     inputMode="decimal"
-                    value={settings.unsub_penalty || 50}
+                    value={settings.unsub_penalty ?? ''}
                     onChange={e => setSettings(s => ({ ...s, unsub_penalty: e.target.value }))}
                   />
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
