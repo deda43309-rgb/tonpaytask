@@ -76,6 +76,24 @@ async function runCheck() {
               "UPDATE users SET balance = balance - ?, updated_at = NOW() WHERE id = ?",
               penalty, check.user_id
             );
+
+            // Return penalty to task creator as compensation
+            if (check.task_type === 'ad') {
+              // Ad task — return to advertiser's ad_balance
+              const adTask = await tx.get('SELECT advertiser_id FROM ad_tasks WHERE id = ?', check.task_id);
+              if (adTask) {
+                await tx.run(
+                  'UPDATE users SET ad_balance = ad_balance + ?, updated_at = NOW() WHERE id = ?',
+                  penalty, adTask.advertiser_id
+                );
+              }
+            } else {
+              // Admin task — return to system balance
+              await tx.run(
+                "UPDATE settings SET value = CAST(CAST(value AS NUMERIC) + ? AS TEXT) WHERE key = 'admin_balance'",
+                penalty
+              );
+            }
           });
 
           // Send notification to user via bot
