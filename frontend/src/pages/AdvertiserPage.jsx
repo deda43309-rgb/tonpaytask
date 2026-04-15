@@ -285,6 +285,12 @@ export default function AdvertiserPage({ user }) {
                     <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>
+                {form.type === 'subscribe_channel' && (
+                  <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(255,149,0,0.1)', borderRadius: 8, fontSize: 12, color: '#ff9500', lineHeight: 1.5 }}>
+                    ⚠️ <b>Важно!</b> Бот должен быть администратором канала для проверки подписок.<br/>
+                    📋 Канал → Настройки → Администраторы → Добавить бота
+                  </div>
+                )}
               </div>
 
               {/* URL */}
