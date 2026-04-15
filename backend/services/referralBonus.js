@@ -44,17 +44,12 @@ async function checkAndPayReferralBonus(userId) {
       return;
     }
 
-    // Check admin balance
+    // Check admin balance (allow negative)
     const balRow = await db.get("SELECT value FROM settings WHERE key = 'admin_balance'");
     const adminBalance = parseFloat(balRow?.value) || 0;
-    const totalCost = bonus * 2; // Both users get bonus
+    const totalCost = bonus * 2;
 
-    console.log(`🔍 [RefBonus] Admin balance: ${adminBalance}, total cost: ${totalCost}`);
-
-    if (adminBalance < totalCost) {
-      console.log(`⚠️ [RefBonus] Admin balance (${adminBalance}) < cost (${totalCost}), skipping`);
-      return;
-    }
+    console.log(`🔍 [RefBonus] Admin balance: ${adminBalance}, will deduct: ${totalCost}`);
 
     const referrerId = user.referred_by;
 
