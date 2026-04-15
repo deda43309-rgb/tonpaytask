@@ -617,6 +617,21 @@ export default function AdminPage({ user }) {
                 </div>
 
                 <div className="form-group">
+                  <label className="form-label">🔄 Интервал проверки (минут)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="1"
+                    max="1440"
+                    value={settings.unsub_check_interval ?? ''}
+                    onChange={e => setSettings(s => ({ ...s, unsub_check_interval: e.target.value }))}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Как часто бот проверяет подписки (по умолчанию 30 мин)
+                  </div>
+                </div>
+
+                <div className="form-group">
                   <label className="form-label">💸 Штраф за отписку (TON)</label>
                   <input
                     className="input"
@@ -630,29 +645,50 @@ export default function AdminPage({ user }) {
                   </div>
                 </div>
 
-                <button
-                  className="btn btn-primary mt-16"
-                  style={{ width: '100%' }}
-                  disabled={savingSettings}
-                  onClick={async () => {
-                    setSavingSettings(true);
-                    try {
-                      const res = await api.updateAdminSettings({
-                        sub_check_hours: settings.sub_check_hours,
-                        unsub_penalty: settings.unsub_penalty,
-                      });
-                      setSettings(res.settings);
-                      showToastMsg('Настройки подписок сохранены ✅');
-                      hapticFeedback('success');
-                    } catch (err) {
-                      showToastMsg(err.message, 'error');
-                    } finally {
-                      setSavingSettings(false);
-                    }
-                  }}
-                >
-                  {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
-                </button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    className="btn btn-primary"
+                    style={{ flex: 1 }}
+                    disabled={savingSettings}
+                    onClick={async () => {
+                      setSavingSettings(true);
+                      try {
+                        const res = await api.updateAdminSettings({
+                          sub_check_hours: settings.sub_check_hours,
+                          unsub_penalty: settings.unsub_penalty,
+                          unsub_check_interval: settings.unsub_check_interval,
+                        });
+                        setSettings(res.settings);
+                        showToastMsg('Настройки подписок сохранены ✅');
+                        hapticFeedback('success');
+                      } catch (err) {
+                        showToastMsg(err.message, 'error');
+                      } finally {
+                        setSavingSettings(false);
+                      }
+                    }}
+                  >
+                    {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
+                  </button>
+                  <button
+                    className="btn"
+                    style={{ 
+                      flex: 1, background: 'rgba(52,199,89,0.15)', 
+                      color: '#34c759', border: '1px solid rgba(52,199,89,0.3)' 
+                    }}
+                    onClick={async () => {
+                      try {
+                        const res = await api.checkSubscriptions();
+                        showToastMsg(res.message || 'Проверка завершена ✅');
+                        hapticFeedback('success');
+                      } catch (err) {
+                        showToastMsg(err.message || 'Ошибка проверки', 'error');
+                      }
+                    }}
+                  >
+                    🔍 Проверить сейчас
+                  </button>
+                </div>
               </div>
 
               <div className="card" style={{ padding: 20, border: '1px solid rgba(239,68,68,0.3)' }}>

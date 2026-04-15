@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('../database');
 const { adminMiddleware } = require('../middleware/auth');
+const { runCheckNow } = require('../services/subscriptionChecker');
 
 const router = express.Router();
 
@@ -246,7 +247,7 @@ router.get('/settings', async (req, res) => {
 router.put('/settings', async (req, res) => {
   try {
     const db = getDb();
-    const fields = ['ad_price', 'ad_user_reward', 'ad_ref_reward', 'ad_commission', 'sub_check_hours', 'unsub_penalty', 'referral_bonus', 'daily_bonus'];
+    const fields = ['ad_price', 'ad_user_reward', 'ad_ref_reward', 'ad_commission', 'sub_check_hours', 'unsub_penalty', 'unsub_check_interval', 'referral_bonus', 'daily_bonus'];
 
     // If admin_balance is being changed, require PIN
     if (req.body.admin_balance !== undefined) {
@@ -283,6 +284,20 @@ router.put('/settings', async (req, res) => {
   } catch (error) {
     console.error('Admin update settings error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * POST /api/admin/check-subscriptions
+ * Запустить проверку подписок вручную
+ */
+router.post('/check-subscriptions', async (req, res) => {
+  try {
+    const result = await runCheckNow();
+    res.json({ success: true, message: `Проверено: ${result.passed} ок, ${result.failed} штрафов` });
+  } catch (error) {
+    console.error('Manual subscription check error:', error);
+    res.status(500).json({ error: 'Ошибка проверки подписок' });
   }
 });
 

@@ -5,28 +5,57 @@ let checkInterval = null;
 
 /**
  * Start periodic subscription checker
- * Runs every 30 minutes, checks pending subscription_checks where check_after <= NOW()
+ * Reads interval from settings (default 30 min)
  */
 function startSubscriptionChecker() {
-  console.log('🔍 Subscription checker started (every 30 min)');
+  console.log('🔍 Subscription checker started');
   
-  // Run immediately on start, then every 30 min
-  setTimeout(() => runCheck(), 10000); // initial delay 10s
-  checkInterval = setInterval(() => runCheck(), 30 * 60 * 1000); // 30 min
+  // Run immediately on start, then schedule
+  setTimeout(() => scheduleNextCheck(), 10000); // initial delay 10s
+}
+
+async function scheduleNextCheck() {
+  try {
+    await runCheck();
+  } catch (e) {
+    console.error('Subscription check error:', e);
+  }
+
+  // Read interval from settings (default 30 min)
+  let intervalMinutes = 30;
+  try {
+    const db = getDb();
+    const row = await db.get("SELECT value FROM settings WHERE key = 'unsub_check_interval'");
+    if (row && parseFloat(row.value) > 0) {
+      intervalMinutes = parseFloat(row.value);
+    }
+  } catch (e) {}
+
+  console.log(`🔍 Next subscription check in ${intervalMinutes} min`);
+  
+  if (checkInterval) clearTimeout(checkInterval);
+  checkInterval = setTimeout(() => scheduleNextCheck(), intervalMinutes * 60 * 1000);
 }
 
 function stopSubscriptionChecker() {
   if (checkInterval) {
-    clearInterval(checkInterval);
+    clearTimeout(checkInterval);
     checkInterval = null;
   }
+}
+
+/**
+ * Run check manually (for admin button)
+ */
+async function runCheckNow() {
+  return await runCheck();
 }
 
 async function runCheck() {
   const bot = getBot();
   if (!bot) {
     console.log('🔍 Subscription check skipped — bot not initialized');
-    return;
+    return { passed: 0, failed: 0 };
   }
 
   const db = getDb();
@@ -40,7 +69,7 @@ async function runCheck() {
       LIMIT 100
     `);
 
-    if (pendingChecks.length === 0) return;
+    if (pendingChecks.length === 0) return { passed: 0, failed: 0 };
 
     console.log(`🔍 Checking ${pendingChecks.length} subscriptions...`);
 
@@ -128,8 +157,10 @@ async function runCheck() {
     }
 
     console.log(`🔍 Subscription check done: ${passed} passed, ${failed} penalized`);
+    return { passed, failed };
   } catch (error) {
     console.error('Subscription checker error:', error);
+    return { passed: 0, failed: 0 };
   }
 }
 
@@ -150,4 +181,4 @@ async function verifySubscription(bot, channelId, userId) {
   }
 }
 
-module.exports = { startSubscriptionChecker, stopSubscriptionChecker };
+module.exports = { startSubscriptionChecker, stopSubscriptionChecker, runCheckNow };

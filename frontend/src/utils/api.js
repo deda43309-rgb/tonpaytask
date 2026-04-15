@@ -105,4 +105,5 @@ export const resetDatabase = (pin, password) =>
     method: 'POST',
     body: JSON.stringify({ pin, password }),
   });
-
+export const checkSubscriptions = () =>
+  request('/admin/check-subscriptions', { method: 'POST' });
