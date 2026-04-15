@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('../database');
 const { getBot } = require('../services/bot');
+const { validateTaskUrl } = require('../services/taskVerifier');
 
 const router = express.Router();
 
@@ -175,6 +176,12 @@ router.post('/tasks', async (req, res) => {
     const validTypes = ['subscribe_channel', 'start_bot', 'visit_link'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({ error: 'Invalid task type' });
+    }
+
+    // Validate URL matches task type
+    const urlCheck = validateTaskUrl(type, url);
+    if (!urlCheck.valid) {
+      return res.status(400).json({ error: urlCheck.error });
     }
 
     if (max_completions < 1 || max_completions > 100000) {
