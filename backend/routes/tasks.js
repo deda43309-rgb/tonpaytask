@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('../database');
 const { verifyTask } = require('../services/taskVerifier');
+const { checkAndPayReferralBonus } = require('../services/referralBonus');
 
 const router = express.Router();
 
@@ -160,6 +161,9 @@ router.post('/:id/complete', async (req, res) => {
       total_earned: updatedUser.total_earned,
       tasks_completed: updatedUser.tasks_completed,
     });
+
+    // Check referral bonus on first activity (async, non-blocking)
+    checkAndPayReferralBonus(userId);
   } catch (error) {
     console.error('Complete task error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -293,6 +297,9 @@ router.post('/:id/complete-ad', async (req, res) => {
       total_earned: updatedUser.total_earned,
       tasks_completed: updatedUser.tasks_completed,
     });
+
+    // Check referral bonus on first activity (async, non-blocking)
+    checkAndPayReferralBonus(userId);
   } catch (error) {
     console.error('Complete ad task error:', error);
     res.status(500).json({ error: 'Internal server error' });

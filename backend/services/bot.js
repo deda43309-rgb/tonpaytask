@@ -36,23 +36,18 @@ function initBot(token) {
           const referrer = await db.get('SELECT * FROM users WHERE referral_code = ?', referrerCode);
 
           if (referrer && referrer.id !== BigInt(userId) && referrer.id != userId) {
-            const bonusRow = await db.get("SELECT value FROM settings WHERE key = 'referral_bonus'");
-            const bonus = parseFloat(bonusRow?.value) || 100;
-
+            // Only save referral link — bonus is paid on first activity
             await db.run('UPDATE users SET referred_by = ? WHERE id = ?', referrer.id, userId);
-            await db.run('UPDATE users SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?', bonus, bonus, referrer.id);
-            await db.run('UPDATE users SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?', bonus, bonus, userId);
-
             await db.run(
               `INSERT INTO referrals (referrer_id, referred_id, bonus)
-               VALUES (?, ?, ?)`,
-              referrer.id, userId, bonus
+               VALUES (?, ?, 0)`,
+              referrer.id, userId
             );
 
             // Notify referrer
             try {
               bot.sendMessage(referrer.id,
-                `🎉 Новый реферал! ${msg.from.first_name} присоединился по вашей ссылке.\n+${bonus} TON!`
+                `👤 Новый реферал! ${msg.from.first_name} присоединился по вашей ссылке.\nБонус будет начислен после первой активности.`
               );
             } catch (e) {
               console.error('Failed to notify referrer:', e);
