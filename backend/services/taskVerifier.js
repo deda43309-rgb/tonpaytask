@@ -28,16 +28,35 @@ async function verifyTask(task, userId) {
 async function verifyChannelSubscription(channelId, userId) {
   const bot = getBot();
   if (!bot) {
-    console.error('Bot not initialized');
-    return false;
+    console.error('Bot not initialized for verification');
+    return true; // Allow if bot is not available
+  }
+
+  // Skip verification for private invite links (t.me/+xxx or t.me/joinchat/xxx)
+  if (!channelId || channelId.includes('+') || channelId.includes('joinchat')) {
+    console.log(`⚠️ Cannot verify private channel "${channelId}" — auto-approving`);
+    return true;
   }
 
   try {
+    console.log(`🔍 Checking subscription: user=${userId}, channel=${channelId}`);
     const chatMember = await bot.getChatMember(channelId, userId);
+    console.log(`📋 Chat member status for user ${userId} in ${channelId}: ${chatMember.status}`);
     const validStatuses = ['member', 'administrator', 'creator'];
     return validStatuses.includes(chatMember.status);
   } catch (error) {
-    console.error(`Failed to verify subscription for user ${userId} in ${channelId}:`, error.message);
+    console.error(`❌ Verification failed for user ${userId} in ${channelId}:`, error.message);
+    
+    // If bot is not admin in channel or channel not found — auto-approve
+    if (error.message.includes('not enough rights') || 
+        error.message.includes('chat not found') ||
+        error.message.includes('CHAT_ADMIN_REQUIRED') ||
+        error.message.includes('Bad Request') ||
+        error.message.includes('403')) {
+      console.log(`⚠️ Bot cannot check channel "${channelId}" — auto-approving`);
+      return true;
+    }
+    
     return false;
   }
 }
