@@ -278,6 +278,22 @@ async function initTables() {
     );
   `);
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS subscription_checks (
+      id SERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(id),
+      task_id INTEGER NOT NULL,
+      task_type TEXT NOT NULL DEFAULT 'admin',
+      channel_id TEXT NOT NULL,
+      completed_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      check_after TIMESTAMP NOT NULL,
+      status TEXT DEFAULT 'pending',
+      checked_at TIMESTAMP,
+      penalty_applied INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
   // Indexes
   const indexes = [
     'CREATE INDEX IF NOT EXISTS idx_task_completions_user ON task_completions(user_id)',
@@ -290,6 +306,8 @@ async function initTables() {
     'CREATE INDEX IF NOT EXISTS idx_ad_deposits_user ON ad_deposits(user_id)',
     'CREATE INDEX IF NOT EXISTS idx_ad_transactions_type ON ad_transactions(type)',
     'CREATE INDEX IF NOT EXISTS idx_ad_transactions_user ON ad_transactions(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_sub_checks_status ON subscription_checks(status)',
+    'CREATE INDEX IF NOT EXISTS idx_sub_checks_check_after ON subscription_checks(check_after)',
   ];
   for (const idx of indexes) {
     try { await db.exec(idx); } catch(e) {}
@@ -302,6 +320,8 @@ async function initTables() {
     ['ad_ref_reward', '2'],
     ['ad_commission', '8'],
     ['admin_balance', '0'],
+    ['sub_check_hours', '72'],
+    ['unsub_penalty', '50'],
   ];
   for (const [key, value] of defaults) {
     try {

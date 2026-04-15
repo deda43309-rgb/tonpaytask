@@ -521,6 +521,8 @@ export default function AdminPage({ user }) {
                         ad_user_reward: settings.ad_user_reward,
                         ad_ref_reward: settings.ad_ref_reward,
                         ad_commission: settings.ad_commission,
+                        sub_check_hours: settings.sub_check_hours,
+                        unsub_penalty: settings.unsub_penalty,
                       });
                       setSettings(res.settings);
                       showToastMsg('Настройки сохранены ✅');
@@ -534,6 +536,39 @@ export default function AdminPage({ user }) {
                 >
                   {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
                 </button>
+              </div>
+
+              <div className="card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🔍 Проверка подписок</h3>
+                
+                <div className="form-group">
+                  <label className="form-label">⏰ Проверка подписки через (часов)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="1"
+                    max="720"
+                    value={settings.sub_check_hours || 72}
+                    onChange={e => setSettings(s => ({ ...s, sub_check_hours: e.target.value }))}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    После выполнения задания «Подписаться» система проверит подписку через указанное время
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">💸 Штраф за отписку (TON)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    value={settings.unsub_penalty || 50}
+                    onChange={e => setSettings(s => ({ ...s, unsub_penalty: e.target.value }))}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Если юзер отписался — с баланса списывается штраф и отправляется уведомление
+                  </div>
+                </div>
               </div>
 
               <div className="card" style={{ padding: 20, border: '1px solid rgba(239,68,68,0.3)' }}>

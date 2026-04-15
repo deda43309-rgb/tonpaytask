@@ -6,6 +6,7 @@ const path = require('path');
 const { initDatabase } = require('./database');
 const { authMiddleware } = require('./middleware/auth');
 const { initBot } = require('./services/bot');
+const { startSubscriptionChecker } = require('./services/subscriptionChecker');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -52,6 +53,8 @@ async function start() {
   // Initialize Telegram Bot
   if (process.env.BOT_TOKEN && process.env.BOT_TOKEN !== 'YOUR_BOT_TOKEN_HERE') {
     initBot(process.env.BOT_TOKEN);
+    // Start subscription checker (runs every 30 min)
+    startSubscriptionChecker();
   } else {
     console.log('⚠️  BOT_TOKEN not set — Telegram Bot disabled');
     console.log('   Set BOT_TOKEN in .env to enable the bot');

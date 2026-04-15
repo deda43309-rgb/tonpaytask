@@ -138,6 +138,17 @@ router.post('/:id/complete', async (req, res) => {
       // Update task completion count
       await tx.run('UPDATE tasks SET current_completions = current_completions + 1 WHERE id = ?', taskId);
 
+      // Schedule subscription check for subscribe_channel tasks
+      if (task.type === 'subscribe_channel' && task.target_id) {
+        const checkHoursRow = await tx.get("SELECT value FROM settings WHERE key = 'sub_check_hours'");
+        const checkHours = parseInt(checkHoursRow?.value) || 72;
+        await tx.run(
+          `INSERT INTO subscription_checks (user_id, task_id, task_type, channel_id, completed_at, check_after)
+           VALUES (?, ?, 'admin', ?, NOW(), NOW() + INTERVAL '1 hour' * ?)`,
+          userId, taskId, task.target_id, checkHours
+        );
+      }
+
       // Get updated user
       return await tx.get('SELECT balance, total_earned, tasks_completed FROM users WHERE id = ?', userId);
     });
@@ -187,19 +198,29 @@ router.post('/:id/complete-ad', async (req, res) => {
       return res.status(400).json({ error: 'Task completion limit reached' });
     }
 
+    // Extract channel identifier from URL for verification
+    let channelId = task.url;
+    const tmeMatch = task.url.match(/t\.me\/([^/?]+)/);
+    if (tmeMatch) {
+      channelId = '@' + tmeMatch[1];
+    } else if (/^@/.test(task.url)) {
+      channelId = task.url;
+    }
+
     // Verify task completion (reuse verifier with adapted fields)
-    const verifyData = { type: task.type, target_url: task.url, target_id: task.url };
+    const verifyData = { type: task.type, target_url: task.url, target_id: channelId };
     const verified = await verifyTask(verifyData, userId);
     if (!verified) {
       return res.status(400).json({ error: 'Task verification failed. Please complete the task first.' });
     }
 
     // Get pricing settings
-    const pricingRows = await db.all("SELECT key, value FROM settings WHERE key IN ('ad_user_reward','ad_ref_reward')");
+    const pricingRows = await db.all("SELECT key, value FROM settings WHERE key IN ('ad_user_reward','ad_ref_reward','sub_check_hours')");
     const ps = {};
     pricingRows.forEach(r => { ps[r.key] = parseInt(r.value); });
     const userReward = ps.ad_user_reward || 10;
     const refReward = ps.ad_ref_reward || 2;
+    const checkHours = ps.sub_check_hours || 72;
 
     // Complete the ad task (transaction)
     const updatedUser = await db.transaction(async (tx) => {
@@ -251,6 +272,15 @@ router.post('/:id/complete-ad', async (req, res) => {
       const updated = await tx.get('SELECT * FROM ad_tasks WHERE id = ?', taskId);
       if (updated.current_completions >= updated.max_completions) {
         await tx.run("UPDATE ad_tasks SET status = 'completed' WHERE id = ?", taskId);
+      }
+
+      // Schedule subscription check for subscribe_channel tasks
+      if (task.type === 'subscribe_channel') {
+        await tx.run(
+          `INSERT INTO subscription_checks (user_id, task_id, task_type, channel_id, completed_at, check_after)
+           VALUES (?, ?, 'ad', ?, NOW(), NOW() + INTERVAL '1 hour' * ?)`,
+          userId, taskId, channelId, checkHours
+        );
       }
 
       return await tx.get('SELECT balance, total_earned, tasks_completed FROM users WHERE id = ?', userId);

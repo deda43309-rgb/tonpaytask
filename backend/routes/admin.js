@@ -246,7 +246,7 @@ router.get('/settings', async (req, res) => {
 router.put('/settings', async (req, res) => {
   try {
     const db = getDb();
-    const fields = ['ad_price', 'ad_user_reward', 'ad_ref_reward', 'ad_commission'];
+    const fields = ['ad_price', 'ad_user_reward', 'ad_ref_reward', 'ad_commission', 'sub_check_hours', 'unsub_penalty'];
 
     // If admin_balance is being changed, require PIN
     if (req.body.admin_balance !== undefined) {
@@ -305,6 +305,7 @@ router.post('/reset', async (req, res) => {
     }
 
     // Delete all data in correct order (foreign keys)
+    await db.run('DELETE FROM subscription_checks');
     await db.run('DELETE FROM ad_task_completions');
     await db.run('DELETE FROM ad_transactions');
     await db.run('DELETE FROM ad_deposits');
