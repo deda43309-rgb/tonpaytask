@@ -64,7 +64,7 @@ router.get('/reward-price', async (req, res) => {
     const db = getDb();
     const rows = await db.all("SELECT key, value FROM settings WHERE key IN ('ad_price','ad_user_reward','ad_ref_reward','ad_commission')");
     const s = {};
-    rows.forEach(r => { s[r.key] = parseInt(r.value); });
+    rows.forEach(r => { s[r.key] = parseFloat(r.value); });
     res.json({
       ad_price: s.ad_price || 20,
       ad_user_reward: s.ad_user_reward || 10,
@@ -163,7 +163,7 @@ router.post('/tasks', async (req, res) => {
     // Get pricing from settings
     const pricingRows = await db.all("SELECT key, value FROM settings WHERE key IN ('ad_price','ad_user_reward')");
     const ps = {};
-    pricingRows.forEach(r => { ps[r.key] = parseInt(r.value); });
+    pricingRows.forEach(r => { ps[r.key] = parseFloat(r.value); });
     const adPrice = ps.ad_price || 20;
     const reward = ps.ad_user_reward || 10;
 
@@ -330,8 +330,8 @@ router.get('/stats', async (req, res) => {
       total_tasks: parseInt(totalTasks?.count || 0),
       active_tasks: parseInt(activeTasks?.count || 0),
       total_completions: parseInt(totalCompletions?.count || 0),
-      total_spent: parseInt(totalSpent?.total || 0),
-      total_deposited: parseInt(deposits?.total || 0),
+      total_spent: parseFloat(totalSpent?.total || 0),
+      total_deposited: parseFloat(deposits?.total || 0),
     });
   } catch (error) {
     console.error('Get ad stats error:', error);
@@ -359,7 +359,7 @@ router.delete('/tasks/:id', async (req, res) => {
 
     if (remaining > 0) {
       const priceRow = await db.get("SELECT value FROM settings WHERE key = 'ad_price'");
-      const adPrice = parseInt(priceRow?.value) || 20;
+      const adPrice = parseFloat(priceRow?.value) || 20;
       refund = remaining * adPrice;
 
       await db.run(

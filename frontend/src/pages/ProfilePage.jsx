@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { hapticFeedback } from '../utils/telegram';
+import { formatTON } from '../utils/format';
 import './ProfilePage.css';
 
 export default function ProfilePage({ user }) {
@@ -43,7 +44,7 @@ export default function ProfilePage({ user }) {
           <div className="profile-stat">
             <span className="profile-stat-icon">💎</span>
             <div className="profile-stat-text">
-              <span className="profile-stat-value">{(user?.balance || 0).toLocaleString()}</span>
+              <span className="profile-stat-value">{formatTON(user?.balance || 0)}</span>
               <span className="profile-stat-label">Баланс</span>
             </div>
           </div>
@@ -51,7 +52,7 @@ export default function ProfilePage({ user }) {
           <div className="profile-stat">
             <span className="profile-stat-icon">📊</span>
             <div className="profile-stat-text">
-              <span className="profile-stat-value">{(user?.total_earned || 0).toLocaleString()}</span>
+              <span className="profile-stat-value">{formatTON(user?.total_earned || 0)}</span>
               <span className="profile-stat-label">Всего заработано</span>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import TaskCard from '../components/TaskCard';
 import Loader from '../components/Loader';
+import { formatTON } from '../utils/format';
 import * as api from '../utils/api';
 import './TasksPage.css';
 
@@ -46,7 +47,7 @@ export default function TasksPage({ onUserUpdate }) {
       }));
 
       // Show reward toast
-      showToast(`+${result.reward} TON! 🎉`, 'success');
+      showToast(`+${formatTON(result.reward)} TON! 🎉`, 'success');
 
       // Update user balance
       if (onUserUpdate) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Loader from '../components/Loader';
 import { hapticFeedback } from '../utils/telegram';
+import { formatTON } from '../utils/format';
 import * as api from '../utils/api';
 import './ReferralPage.css';
 
@@ -111,7 +112,7 @@ export default function ReferralPage({ user }) {
         </div>
         <div className="card referral-stat-card">
           <span className="referral-stat-icon">💎</span>
-          <span className="referral-stat-value">{totalBonus.toLocaleString()}</span>
+          <span className="referral-stat-value">{formatTON(totalBonus)}</span>
           <span className="referral-stat-label">Заработано</span>
         </div>
       </div>
@@ -135,7 +136,7 @@ export default function ReferralPage({ user }) {
                     {new Date(ref.created_at).toLocaleDateString('ru-RU')}
                   </span>
                 </div>
-                <span className="badge badge-success">+{ref.bonus}</span>
+                <span className="badge badge-success">+{formatTON(ref.bonus)}</span>
               </div>
             ))}
           </div>

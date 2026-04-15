@@ -29,7 +29,7 @@ router.get('/stats', async (req, res) => {
       users: parseInt(userCount.count),
       active_tasks: parseInt(taskCount.count),
       total_completions: parseInt(completionCount.count),
-      total_paid: parseInt(totalPaid.total),
+      total_paid: parseFloat(totalPaid.total),
       today_users: parseInt(todayUsers.count),
       today_completions: parseInt(todayCompletions.count),
     });
@@ -75,12 +75,12 @@ router.post('/tasks', async (req, res) => {
       return res.status(400).json({ error: `Invalid type. Must be: ${validTypes.join(', ')}` });
     }
 
-    const taskReward = parseInt(reward) || 0;
+    const taskReward = parseFloat(reward) || 0;
     const totalCost = taskReward * parseInt(max_completions);
 
     // Check system balance
     const balRow = await db.get("SELECT value FROM settings WHERE key = 'admin_balance'");
-    const systemBalance = parseInt(balRow?.value) || 0;
+    const systemBalance = parseFloat(balRow?.value) || 0;
 
     if (totalCost > systemBalance) {
       return res.status(400).json({ error: `Недостаточно баланса системы. Нужно: ${totalCost}, доступно: ${systemBalance}` });
@@ -173,7 +173,7 @@ router.delete('/tasks/:id', async (req, res) => {
       if (remaining > 0) {
         const refund = remaining * (task.reward || 0);
         await db.run(
-          "UPDATE settings SET value = CAST(CAST(value AS INTEGER) + ? AS TEXT) WHERE key = 'admin_balance'",
+          "UPDATE settings SET value = CAST(CAST(value AS NUMERIC) + ? AS TEXT) WHERE key = 'admin_balance'",
           refund
         );
       }
@@ -255,7 +255,7 @@ router.put('/settings', async (req, res) => {
       if (!pin || String(pin) !== String(correctPin)) {
         return res.status(403).json({ error: 'Неверный PIN-код' });
       }
-      const val = parseInt(req.body.admin_balance);
+      const val = parseFloat(req.body.admin_balance);
       if (val >= 0 && val <= 999999999) {
         await db.run(
           "INSERT INTO settings (key, value) VALUES ('admin_balance', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
@@ -266,7 +266,7 @@ router.put('/settings', async (req, res) => {
 
     for (const key of fields) {
       if (req.body[key] !== undefined) {
-        const val = parseInt(req.body[key]);
+        const val = parseFloat(req.body[key]);
         if (val >= 0 && val <= 1000000) {
           await db.run(
             "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
@@ -340,7 +340,7 @@ router.get('/ad-revenue', async (req, res) => {
     `);
 
     const byType = {};
-    totals.forEach(r => { byType[r.type] = { total: parseInt(r.total), count: parseInt(r.count) }; });
+    totals.forEach(r => { byType[r.type] = { total: parseFloat(r.total), count: parseInt(r.count) }; });
 
     // Today's revenue
     const today = new Date().toISOString().split('T')[0];
@@ -352,7 +352,7 @@ router.get('/ad-revenue', async (req, res) => {
     `, today);
 
     const todayByType = {};
-    todayTotals.forEach(r => { todayByType[r.type] = parseInt(r.total); });
+    todayTotals.forEach(r => { todayByType[r.type] = parseFloat(r.total); });
 
     // Top earners (users)
     const topUsers = await db.all(`
@@ -389,8 +389,8 @@ router.get('/ad-revenue', async (req, res) => {
     `);
 
     res.json({
-      admin_balance: parseInt(adminBal?.value || '0'),
-      task_expenses: parseInt(taskExpenses.total),
+      admin_balance: parseFloat(adminBal?.value || '0'),
+      task_expenses: parseFloat(taskExpenses.total),
       commission: byType.commission || { total: 0, count: 0 },
       user_rewards: byType.user_reward || { total: 0, count: 0 },
       ref_rewards: byType.ref_reward || { total: 0, count: 0 },
@@ -399,7 +399,7 @@ router.get('/ad-revenue', async (req, res) => {
         user_rewards: todayByType.user_reward || 0,
         ref_rewards: todayByType.ref_reward || 0,
       },
-      total_deposited: parseInt(totalDeposited.total),
+      total_deposited: parseFloat(totalDeposited.total),
       top_users: topUsers,
       top_refs: topRefs,
     });

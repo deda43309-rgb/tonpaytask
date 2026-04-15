@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { hapticFeedback } from '../utils/telegram';
+import { formatTON } from '../utils/format';
 import * as api from '../utils/api';
 import Loader from '../components/Loader';
 import './AdvertiserPage.css';
@@ -190,7 +191,7 @@ export default function AdvertiserPage({ user }) {
       {/* Balance */}
       <div className="card adv-balance-card animate-slide">
         <div className="adv-balance-icon">💰</div>
-        <div className="adv-balance-value">{balance.toLocaleString()}</div>
+        <div className="adv-balance-value">{formatTON(balance)}</div>
         <div className="adv-balance-label">Рекламный баланс</div>
         <button className="adv-deposit-btn" onClick={() => { hapticFeedback('light'); setShowDeposit(true); }}>
           ➕ Пополнить
@@ -236,7 +237,7 @@ export default function AdvertiserPage({ user }) {
                         <div className="adv-task-info">
                           <div className="adv-task-title">{task.title}</div>
                           <div className="adv-task-meta">
-                            <span>{task.reward} TON/выполнение</span>
+                            <span>{formatTON(task.reward)} TON/выполнение</span>
                             <span className={`adv-task-status ${task.status}`}>{
                               task.status === 'active' ? '🟢 Активно' :
                               task.status === 'paused' ? '⏸ Пауза' : '✅ Завершено'
@@ -250,7 +251,7 @@ export default function AdvertiserPage({ user }) {
                         </div>
                         <div className="adv-task-progress-text">
                           <span>{task.current_completions} / {task.max_completions}</span>
-                          <span>−{spent.toLocaleString()} TON</span>
+                          <span>−{formatTON(spent)} TON</span>
                         </div>
                       </div>
                       {task.status !== 'completed' && (
@@ -356,8 +357,8 @@ export default function AdvertiserPage({ user }) {
               <div className="adv-form-group">
                 <label className="adv-form-label">Цена за 1 выполнение</label>
                 <div className="adv-fixed-reward-info">
-                  <span className="adv-fixed-reward-value">{adPrice} TON</span>
-                  <span className="adv-fixed-reward-note">исполнитель получит {userReward} TON</span>
+                  <span className="adv-fixed-reward-value">{formatTON(adPrice)} TON</span>
+                  <span className="adv-fixed-reward-note">исполнитель получит {formatTON(userReward)} TON</span>
                 </div>
               </div>
 
@@ -377,9 +378,9 @@ export default function AdvertiserPage({ user }) {
 
               {/* Cost preview */}
               <div className="adv-cost-preview">
-                <div className="adv-cost-preview-value">{totalCost.toLocaleString()} TON</div>
+                <div className="adv-cost-preview-value">{formatTON(totalCost)} TON</div>
                 <div className="adv-cost-preview-label">
-                  {adPrice} TON × {form.max_completions} выполнений
+                  {formatTON(adPrice)} TON × {form.max_completions} выполнений
                   {totalCost > balance && <span style={{ color: '#ff3b30', marginLeft: 8 }}>⚠ Недостаточно средств</span>}
                 </div>
               </div>
@@ -390,7 +391,7 @@ export default function AdvertiserPage({ user }) {
                 style={{ width: '100%', background: 'linear-gradient(135deg, #f5a623, #e09500)' }}
                 disabled={creating || totalCost > balance || !form.title || !form.url}
               >
-                {creating ? '⏳ Создание...' : `📢 Создать задание (−${totalCost.toLocaleString()} TON)`}
+                {creating ? '⏳ Создание...' : `📢 Создать задание (−${formatTON(totalCost)} TON)`}
               </button>
             </form>
           </div>
@@ -415,12 +416,12 @@ export default function AdvertiserPage({ user }) {
             </div>
             <div className="card adv-stat-card">
               <span className="adv-stat-icon">💸</span>
-              <span className="adv-stat-value gold">{stats.total_spent.toLocaleString()}</span>
+              <span className="adv-stat-value gold">{formatTON(stats.total_spent)}</span>
               <span className="adv-stat-label">Потрачено</span>
             </div>
             <div className="card adv-stat-card" style={{ gridColumn: 'span 2' }}>
               <span className="adv-stat-icon">💳</span>
-              <span className="adv-stat-value gold">{stats.total_deposited.toLocaleString()}</span>
+              <span className="adv-stat-value gold">{formatTON(stats.total_deposited)}</span>
               <span className="adv-stat-label">Всего пополнено</span>
             </div>
           </div>
@@ -449,7 +450,7 @@ export default function AdvertiserPage({ user }) {
               min="1"
               max="1000000"
               value={depositAmount}
-              onChange={e => setDepositAmount(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={e => setDepositAmount(Math.max(0.0001, parseFloat(e.target.value) || 0.0001))}
               placeholder="Или введите сумму"
             />
             <div className="adv-modal-actions">
@@ -462,7 +463,7 @@ export default function AdvertiserPage({ user }) {
                 onClick={handleDeposit}
                 disabled={depositing}
               >
-                {depositing ? '⏳...' : `+${depositAmount.toLocaleString()} TON`}
+                {depositing ? '⏳...' : `+${formatTON(depositAmount)} TON`}
               </button>
             </div>
           </div>

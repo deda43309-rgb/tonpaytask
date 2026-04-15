@@ -133,7 +133,7 @@ router.post('/:id/complete', async (req, res) => {
       `, task.reward, task.reward, userId);
 
       // Deduct from admin balance
-      await tx.run("UPDATE settings SET value = CAST(CAST(value AS INTEGER) - ? AS TEXT) WHERE key = 'admin_balance'", task.reward);
+      await tx.run("UPDATE settings SET value = CAST(CAST(value AS NUMERIC) - ? AS TEXT) WHERE key = 'admin_balance'", task.reward);
 
       // Update task completion count
       await tx.run('UPDATE tasks SET current_completions = current_completions + 1 WHERE id = ?', taskId);
@@ -217,7 +217,7 @@ router.post('/:id/complete-ad', async (req, res) => {
     // Get pricing settings
     const pricingRows = await db.all("SELECT key, value FROM settings WHERE key IN ('ad_user_reward','ad_ref_reward','sub_check_hours')");
     const ps = {};
-    pricingRows.forEach(r => { ps[r.key] = parseInt(r.value); });
+    pricingRows.forEach(r => { ps[r.key] = parseFloat(r.value); });
     const userReward = ps.ad_user_reward || 10;
     const refReward = ps.ad_ref_reward || 2;
     const checkHours = ps.sub_check_hours || 72;
@@ -262,7 +262,7 @@ router.post('/:id/complete-ad', async (req, res) => {
       if (actualCommission > 0) {
         await tx.run('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)', taskId, null, 'commission', actualCommission);
         // Credit admin balance with commission
-        await tx.run("UPDATE settings SET value = CAST(CAST(value AS INTEGER) + ? AS TEXT) WHERE key = 'admin_balance'", actualCommission);
+        await tx.run("UPDATE settings SET value = CAST(CAST(value AS NUMERIC) + ? AS TEXT) WHERE key = 'admin_balance'", actualCommission);
       }
 
       // Update ad task completion count

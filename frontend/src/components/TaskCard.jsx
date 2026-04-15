@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { hapticFeedback } from '../utils/telegram';
+import { formatTON } from '../utils/format';
 import './TaskCard.css';
 
 const typeLabels = {
@@ -72,7 +73,7 @@ export default function TaskCard({ task, onComplete }) {
           </div>
         </div>
         <div className="task-card-reward">
-          <span className="task-reward-value">+{task.reward}</span>
+          <span className="task-reward-value">+{formatTON(task.reward)}</span>
           <span className="task-reward-label">TON</span>
         </div>
       </div>

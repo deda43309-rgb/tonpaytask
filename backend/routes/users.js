@@ -151,7 +151,7 @@ router.get('/referrals', async (req, res) => {
     res.json({
       referral_code: user.referral_code,
       referrals,
-      total_bonus: parseInt(totalBonus.total),
+      total_bonus: parseFloat(totalBonus.total),
       count: referrals.length,
     });
   } catch (error) {

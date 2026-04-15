@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../components/Loader';
 import { hapticFeedback } from '../utils/telegram';
+import { formatTON } from '../utils/format';
 import * as api from '../utils/api';
 import './AdminPage.css';
 
@@ -173,7 +174,7 @@ export default function AdminPage({ user }) {
       type: 'subscribe_channel',
       title: '',
       description: '',
-      reward: parseInt(settings.ad_user_reward) || 10,
+      reward: parseFloat(settings.ad_user_reward) || 10,
       target_url: '',
       target_id: '',
       icon: '🔔',
@@ -239,7 +240,7 @@ export default function AdminPage({ user }) {
                 </div>
                 <div className="card admin-stat-card">
                   <span className="admin-stat-icon">💎</span>
-                  <span className="admin-stat-value">{stats.total_paid.toLocaleString()}</span>
+                  <span className="admin-stat-value">{formatTON(stats.total_paid)}</span>
                   <span className="admin-stat-label">Всего выплат</span>
                 </div>
               </div>
@@ -279,7 +280,7 @@ export default function AdminPage({ user }) {
                       <div className="admin-task-info">
                         <span className="admin-task-title">{task.title}</span>
                         <span className="admin-task-meta">
-                          +{task.reward} TON · {task.current_completions} выполнений
+                          +{formatTON(task.reward)} TON · {task.current_completions} выполнений
                         </span>
                       </div>
                       <span className={`badge ${task.is_active ? 'badge-success' : 'badge-danger'}`}>
@@ -320,7 +321,7 @@ export default function AdminPage({ user }) {
                       {u.first_name || u.username || `#${u.id}`}
                     </span>
                     <span className="admin-user-meta">
-                      💎 {u.balance} · ✅ {u.tasks_completed} · 👥 {u.referral_count || 0}
+                      💎 {formatTON(u.balance)} · ✅ {u.tasks_completed} · 👥 {u.referral_count || 0}
                     </span>
                   </div>
                 </div>
@@ -341,31 +342,31 @@ export default function AdminPage({ user }) {
               {/* Admin Balance */}
               <div className="card" style={{ padding: 20, textAlign: 'center', background: 'linear-gradient(135deg, rgba(52, 199, 89, 0.08), rgba(52, 199, 89, 0.02))', border: '1px solid rgba(52, 199, 89, 0.15)' }}>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>💰 Баланс системы</div>
-                <div style={{ fontSize: 32, fontWeight: 800, color: revenue.admin_balance >= 0 ? '#34c759' : '#ff3b30' }}>{revenue.admin_balance.toLocaleString()} TON</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: revenue.admin_balance >= 0 ? '#34c759' : '#ff3b30' }}>{formatTON(revenue.admin_balance)} TON</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
-                  📈 Комиссия: +{revenue.commission.total.toLocaleString()} · 📉 Расходы заданий: −{revenue.task_expenses.toLocaleString()}
+                  📈 Комиссия: +{formatTON(revenue.commission.total)} · 📉 Расходы заданий: −{formatTON(revenue.task_expenses)}
                 </div>
               </div>
 
               <div className="admin-stats-grid" style={{ marginTop: 16 }}>
                 <div className="card admin-stat-card">
                   <span className="admin-stat-icon">🏦</span>
-                  <span className="admin-stat-value" style={{ color: '#34c759' }}>{revenue.commission.total.toLocaleString()}</span>
+                  <span className="admin-stat-value" style={{ color: '#34c759' }}>{formatTON(revenue.commission.total)}</span>
                   <span className="admin-stat-label">Комиссия системы</span>
                 </div>
                 <div className="card admin-stat-card">
                   <span className="admin-stat-icon">🎯</span>
-                  <span className="admin-stat-value">{revenue.user_rewards.total.toLocaleString()}</span>
+                  <span className="admin-stat-value">{formatTON(revenue.user_rewards.total)}</span>
                   <span className="admin-stat-label">Выплата юзерам</span>
                 </div>
                 <div className="card admin-stat-card">
                   <span className="admin-stat-icon">👥</span>
-                  <span className="admin-stat-value">{revenue.ref_rewards.total.toLocaleString()}</span>
+                  <span className="admin-stat-value">{formatTON(revenue.ref_rewards.total)}</span>
                   <span className="admin-stat-label">Реф. награды</span>
                 </div>
                 <div className="card admin-stat-card">
                   <span className="admin-stat-icon">💳</span>
-                  <span className="admin-stat-value">{revenue.total_deposited.toLocaleString()}</span>
+                  <span className="admin-stat-value">{formatTON(revenue.total_deposited)}</span>
                   <span className="admin-stat-label">Всего депозитов</span>
                 </div>
               </div>
@@ -374,15 +375,15 @@ export default function AdminPage({ user }) {
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>📅 Сегодня</h3>
                 <div className="admin-today-grid">
                   <div className="admin-today-item">
-                    <span className="admin-today-value" style={{ color: '#34c759' }}>{revenue.today.commission}</span>
+                    <span className="admin-today-value" style={{ color: '#34c759' }}>{formatTON(revenue.today.commission)}</span>
                     <span className="admin-today-label">Комиссия</span>
                   </div>
                   <div className="admin-today-item">
-                    <span className="admin-today-value">{revenue.today.user_rewards}</span>
+                    <span className="admin-today-value">{formatTON(revenue.today.user_rewards)}</span>
                     <span className="admin-today-label">Юзерам</span>
                   </div>
                   <div className="admin-today-item">
-                    <span className="admin-today-value">{revenue.today.ref_rewards}</span>
+                    <span className="admin-today-value">{formatTON(revenue.today.ref_rewards)}</span>
                     <span className="admin-today-label">Рефералам</span>
                   </div>
                 </div>
@@ -424,6 +425,7 @@ export default function AdminPage({ user }) {
                   <input
                     className="input"
                     type="number"
+                    step="0.0001"
                     value={settings.admin_balance || 0}
                     onChange={e => setSettings({ ...settings, admin_balance: e.target.value })}
                   />
@@ -462,7 +464,8 @@ export default function AdminPage({ user }) {
                   <input
                     className="input"
                     type="number"
-                    min="1"
+                    step="0.0001"
+                    min="0"
                     value={settings.ad_price || 20}
                     onChange={e => setSettings(s => ({ ...s, ad_price: e.target.value }))}
                   />
@@ -473,6 +476,7 @@ export default function AdminPage({ user }) {
                   <input
                     className="input"
                     type="number"
+                    step="0.0001"
                     min="0"
                     value={settings.ad_user_reward || 10}
                     onChange={e => setSettings(s => ({ ...s, ad_user_reward: e.target.value }))}
@@ -484,6 +488,7 @@ export default function AdminPage({ user }) {
                   <input
                     className="input"
                     type="number"
+                    step="0.0001"
                     min="0"
                     value={settings.ad_ref_reward || 2}
                     onChange={e => setSettings(s => ({ ...s, ad_ref_reward: e.target.value }))}
@@ -495,6 +500,7 @@ export default function AdminPage({ user }) {
                   <input
                     className="input"
                     type="number"
+                    step="0.0001"
                     min="0"
                     value={settings.ad_commission || 8}
                     onChange={e => setSettings(s => ({ ...s, ad_commission: e.target.value }))}
@@ -502,9 +508,9 @@ export default function AdminPage({ user }) {
                 </div>
 
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px 0', borderTop: '1px solid var(--border)', marginTop: 8 }}>
-                  📊 Итого: {parseInt(settings.ad_user_reward || 10) + parseInt(settings.ad_ref_reward || 2) + parseInt(settings.ad_commission || 8)} TON
-                  {' '}из {settings.ad_price || 20} TON
-                  {parseInt(settings.ad_user_reward || 10) + parseInt(settings.ad_ref_reward || 2) + parseInt(settings.ad_commission || 8) !== parseInt(settings.ad_price || 20) && (
+                  📊 Итого: {formatTON(parseFloat(settings.ad_user_reward || 10) + parseFloat(settings.ad_ref_reward || 2) + parseFloat(settings.ad_commission || 8))} TON
+                  {' '}из {formatTON(settings.ad_price || 20)} TON
+                  {Math.abs((parseFloat(settings.ad_user_reward || 10) + parseFloat(settings.ad_ref_reward || 2) + parseFloat(settings.ad_commission || 8)) - parseFloat(settings.ad_price || 20)) > 0.0001 && (
                     <span style={{ color: '#ff3b30', fontWeight: 700 }}> ⚠ Суммы не совпадают!</span>
                   )}
                 </div>
@@ -561,6 +567,7 @@ export default function AdminPage({ user }) {
                   <input
                     className="input"
                     type="number"
+                    step="0.0001"
                     min="0"
                     value={settings.unsub_penalty || 50}
                     onChange={e => setSettings(s => ({ ...s, unsub_penalty: e.target.value }))}
@@ -721,8 +728,8 @@ export default function AdminPage({ user }) {
               </div>
               {taskForm.max_completions > 0 && taskForm.reward > 0 && (
                 <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-                  💰 Стоимость: <b style={{ color: 'var(--accent-primary)' }}>{taskForm.reward * taskForm.max_completions} TON</b>
-                  {' '}({taskForm.max_completions} × {taskForm.reward})
+                  💰 Стоимость: <b style={{ color: 'var(--accent-primary)' }}>{formatTON(taskForm.reward * taskForm.max_completions)} TON</b>
+                  {' '}({taskForm.max_completions} × {formatTON(taskForm.reward)})
                 </div>
               )}
             </div>

@@ -155,18 +155,35 @@ async function initTables() {
       first_name TEXT,
       last_name TEXT,
       photo_url TEXT,
-      balance INTEGER DEFAULT 0,
+      balance NUMERIC DEFAULT 0,
       referral_code TEXT UNIQUE,
       referred_by BIGINT,
       is_admin INTEGER DEFAULT 0,
       last_daily_bonus TIMESTAMP,
-      total_earned INTEGER DEFAULT 0,
+      total_earned NUMERIC DEFAULT 0,
       tasks_completed INTEGER DEFAULT 0,
-      ad_balance INTEGER DEFAULT 0,
+      ad_balance NUMERIC DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW(),
       updated_at TIMESTAMP DEFAULT NOW()
     );
   `);
+
+  // Migrate existing INTEGER columns to NUMERIC
+  const migrations = [
+    'ALTER TABLE users ALTER COLUMN balance TYPE NUMERIC USING balance::NUMERIC',
+    'ALTER TABLE users ALTER COLUMN total_earned TYPE NUMERIC USING total_earned::NUMERIC',
+    'ALTER TABLE users ALTER COLUMN ad_balance TYPE NUMERIC USING ad_balance::NUMERIC',
+    'ALTER TABLE tasks ALTER COLUMN reward TYPE NUMERIC USING reward::NUMERIC',
+    'ALTER TABLE referrals ALTER COLUMN bonus TYPE NUMERIC USING bonus::NUMERIC',
+    'ALTER TABLE daily_bonuses ALTER COLUMN amount TYPE NUMERIC USING amount::NUMERIC',
+    'ALTER TABLE ad_tasks ALTER COLUMN reward TYPE NUMERIC USING reward::NUMERIC',
+    'ALTER TABLE ad_deposits ALTER COLUMN amount TYPE NUMERIC USING amount::NUMERIC',
+    'ALTER TABLE ad_transactions ALTER COLUMN amount TYPE NUMERIC USING amount::NUMERIC',
+    'ALTER TABLE subscription_checks ALTER COLUMN penalty_applied TYPE NUMERIC USING penalty_applied::NUMERIC',
+  ];
+  for (const m of migrations) {
+    try { await db.exec(m); } catch(e) {}
+  }
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
@@ -206,7 +223,7 @@ async function initTables() {
       id SERIAL PRIMARY KEY,
       referrer_id BIGINT NOT NULL REFERENCES users(id),
       referred_id BIGINT NOT NULL REFERENCES users(id),
-      bonus INTEGER DEFAULT 0,
+      bonus NUMERIC DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW(),
       UNIQUE(referred_id)
     );

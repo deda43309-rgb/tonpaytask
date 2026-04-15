@@ -46,7 +46,7 @@ async function runCheck() {
 
     // Get penalty setting
     const penaltyRow = await db.get("SELECT value FROM settings WHERE key = 'unsub_penalty'");
-    const penalty = parseInt(penaltyRow?.value) || 50;
+    const penalty = parseFloat(penaltyRow?.value) || 50;
 
     let passed = 0;
     let failed = 0;

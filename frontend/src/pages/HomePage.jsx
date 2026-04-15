@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BalanceWidget from '../components/BalanceWidget';
 import { hapticFeedback } from '../utils/telegram';
+import { formatTON } from '../utils/format';
 import * as api from '../utils/api';
 import './HomePage.css';
 
@@ -88,7 +89,7 @@ export default function HomePage({ user, onUserUpdate }) {
 
           {showBonus && bonusResult && (
             <div className="daily-bonus-result">
-              <span className="bonus-amount">+{bonusResult.bonus} TON</span>
+              <span className="bonus-amount">+{formatTON(bonusResult.bonus)} TON</span>
               <span className="bonus-streak">🔥 Серия: {bonusResult.streak} дн.</span>
             </div>
           )}
@@ -122,7 +123,7 @@ export default function HomePage({ user, onUserUpdate }) {
           </div>
           <div className="stat-item card">
             <span className="stat-icon">💎</span>
-            <span className="stat-value">{(user?.total_earned || 0).toLocaleString()}</span>
+            <span className="stat-value">{formatTON(user?.total_earned || 0)}</span>
             <span className="stat-label">Заработано</span>
           </div>
           <div className="stat-item card">
