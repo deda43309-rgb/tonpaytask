@@ -323,6 +323,35 @@ export default function AdvertiserPage({ user }) {
                         👥 {resolved.members_count.toLocaleString()} подписчиков
                       </div>
                     )}
+                    {form.type === 'subscribe_channel' && resolved.bot_is_admin !== null && (
+                      <div style={{ 
+                        marginTop: 4, fontSize: 12, fontWeight: 600,
+                        color: resolved.bot_is_admin ? '#34c759' : '#ff3b30'
+                      }}>
+                        {resolved.bot_is_admin ? '✅ Бот — администратор' : '❌ Бот НЕ администратор'}
+                      </div>
+                    )}
+                    {form.type === 'subscribe_channel' && resolved.bot_is_admin === false && resolved.bot_username && (
+                      <div style={{ marginTop: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText('@' + resolved.bot_username);
+                            alert('Скопировано: @' + resolved.bot_username);
+                          }}
+                          style={{
+                            padding: '4px 10px', fontSize: 11, borderRadius: 6,
+                            border: '1px solid rgba(255,149,0,0.4)', background: 'rgba(255,149,0,0.1)',
+                            color: '#ff9500', cursor: 'pointer', fontWeight: 600
+                          }}
+                        >
+                          📋 Скопировать @{resolved.bot_username}
+                        </button>
+                        <div style={{ marginTop: 4, fontSize: 11, color: '#888', lineHeight: 1.4 }}>
+                          Добавьте бота в администраторы канала и обновите ссылку
+                        </div>
+                      </div>
+                    )}
                     {resolved.description && (
                       <div className="adv-resolved-desc">{resolved.description.substring(0, 100)}</div>
                     )}

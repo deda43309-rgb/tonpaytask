@@ -27,9 +27,28 @@ router.post('/resolve-url', async (req, res) => {
     // Public userpic URL (works for any public channel/bot — same as tonera)
     const photo = `https://t.me/i/userpic/320/${username}.jpg`;
 
+    // Get bot info for admin check
+    let botUsername = '';
+    try {
+      const botInfo = await bot.getMe();
+      botUsername = botInfo.username || '';
+    } catch (e) {}
+
     try {
       const chat = await bot.getChat('@' + username);
       const memberCount = await bot.getChatMemberCount('@' + username).catch(() => 0);
+
+      // Check if bot is admin (only for channels)
+      let botIsAdmin = null;
+      if (type === 'subscribe_channel' && !username.startsWith('+') && username !== 'joinchat') {
+        try {
+          const botInfo = await bot.getMe();
+          const member = await bot.getChatMember('@' + username, botInfo.id);
+          botIsAdmin = ['administrator', 'creator'].includes(member.status);
+        } catch (e) {
+          botIsAdmin = false;
+        }
+      }
 
       res.json({
         success: true,
@@ -38,6 +57,8 @@ router.post('/resolve-url', async (req, res) => {
         image_url: photo,
         username: chat.username || username,
         members_count: memberCount || null,
+        bot_is_admin: botIsAdmin,
+        bot_username: botUsername,
       });
     } catch (e) {
       // getChat failed — still return photo via public URL
@@ -48,6 +69,8 @@ router.post('/resolve-url', async (req, res) => {
         username: username,
         image_url: photo,
         members_count: null,
+        bot_is_admin: null,
+        bot_username: botUsername,
       });
     }
   } catch (error) {
