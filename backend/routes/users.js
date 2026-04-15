@@ -14,7 +14,7 @@ router.get('/me', async (req, res) => {
 
     const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'Пользователь не найден' });
     }
 
     // Get referral count
@@ -44,7 +44,7 @@ router.get('/me', async (req, res) => {
     });
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -59,7 +59,7 @@ router.post('/daily-bonus', async (req, res) => {
 
     const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'Пользователь не найден' });
     }
 
     // Check if already claimed today
@@ -67,7 +67,7 @@ router.post('/daily-bonus', async (req, res) => {
     if (user.last_daily_bonus) {
       const lastBonusDate = new Date(user.last_daily_bonus).toISOString().split('T')[0];
       if (lastBonusDate === today) {
-        return res.status(400).json({ error: 'Daily bonus already claimed today' });
+        return res.status(400).json({ error: 'Ежедневный бонус уже получен сегодня' });
       }
     }
 
@@ -120,7 +120,7 @@ router.post('/daily-bonus', async (req, res) => {
     });
   } catch (error) {
     console.error('Daily bonus error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -157,7 +157,7 @@ router.get('/referrals', async (req, res) => {
     });
   } catch (error) {
     console.error('Get referrals error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

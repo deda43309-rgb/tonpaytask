@@ -13,7 +13,7 @@ router.post('/login', async (req, res) => {
     const user = req.telegramUser;
 
     if (!user || !user.id) {
-      return res.status(400).json({ error: 'Invalid user data' });
+      return res.status(400).json({ error: 'Неверные данные пользователя' });
     }
 
     // Check if user exists
@@ -92,7 +92,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Auth login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

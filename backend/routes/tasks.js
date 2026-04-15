@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
     res.json({ tasks: [...tasks, ...adTasks], unsub_penalty });
   } catch (error) {
     console.error('Get tasks error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -79,13 +79,13 @@ router.get('/:id', async (req, res) => {
     `, userId, taskId);
 
     if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
+      return res.status(404).json({ error: 'Задание не найдено' });
     }
 
     res.json({ task });
   } catch (error) {
     console.error('Get task error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -102,24 +102,24 @@ router.post('/:id/complete', async (req, res) => {
     // Check task exists and is active
     const task = await db.get('SELECT * FROM tasks WHERE id = ? AND is_active = 1', taskId);
     if (!task) {
-      return res.status(404).json({ error: 'Task not found or inactive' });
+      return res.status(404).json({ error: 'Задание не найдено или неактивно' });
     }
 
     // Check if already completed
     const existing = await db.get('SELECT id FROM task_completions WHERE user_id = ? AND task_id = ?', userId, taskId);
     if (existing) {
-      return res.status(400).json({ error: 'Task already completed' });
+      return res.status(400).json({ error: 'Задание уже выполнено' });
     }
 
     // Check max completions
     if (task.max_completions > 0 && task.current_completions >= task.max_completions) {
-      return res.status(400).json({ error: 'Task completion limit reached' });
+      return res.status(400).json({ error: 'Лимит выполнений достигнут' });
     }
 
     // Verify task completion
     const verified = await verifyTask(task, userId);
     if (!verified) {
-      return res.status(400).json({ error: 'Task verification failed. Please complete the task first.' });
+      return res.status(400).json({ error: 'Проверка не пройдена. Сначала выполните задание.' });
     }
 
     // Complete the task (transaction)
@@ -170,7 +170,7 @@ router.post('/:id/complete', async (req, res) => {
     checkAndPayReferralBonus(userId);
   } catch (error) {
     console.error('Complete task error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -187,23 +187,23 @@ router.post('/:id/complete-ad', async (req, res) => {
     // Check ad task exists and is active
     const task = await db.get("SELECT * FROM ad_tasks WHERE id = ? AND status = 'active'", taskId);
     if (!task) {
-      return res.status(404).json({ error: 'Ad task not found or inactive' });
+      return res.status(404).json({ error: 'Рекламное задание не найдено или неактивно' });
     }
 
     // Cannot complete own task
     if (task.advertiser_id === userId) {
-      return res.status(400).json({ error: 'Cannot complete your own task' });
+      return res.status(400).json({ error: 'Нельзя выполнить своё задание' });
     }
 
     // Check if already completed
     const existing = await db.get('SELECT id FROM ad_task_completions WHERE user_id = ? AND task_id = ?', userId, taskId);
     if (existing) {
-      return res.status(400).json({ error: 'Task already completed' });
+      return res.status(400).json({ error: 'Задание уже выполнено' });
     }
 
     // Check max completions
     if (task.current_completions >= task.max_completions) {
-      return res.status(400).json({ error: 'Task completion limit reached' });
+      return res.status(400).json({ error: 'Лимит выполнений достигнут' });
     }
 
     // Extract channel identifier from URL for verification
@@ -219,7 +219,7 @@ router.post('/:id/complete-ad', async (req, res) => {
     const verifyData = { type: task.type, target_url: task.url, target_id: channelId };
     const verified = await verifyTask(verifyData, userId);
     if (!verified) {
-      return res.status(400).json({ error: 'Task verification failed. Please complete the task first.' });
+      return res.status(400).json({ error: 'Проверка не пройдена. Сначала выполните задание.' });
     }
 
     // Get pricing settings
@@ -306,7 +306,7 @@ router.post('/:id/complete-ad', async (req, res) => {
     checkAndPayReferralBonus(userId);
   } catch (error) {
     console.error('Complete ad task error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

@@ -12,10 +12,10 @@ const router = express.Router();
 router.post('/resolve-url', async (req, res) => {
   try {
     const { url, type } = req.body;
-    if (!url) return res.status(400).json({ error: 'URL is required' });
+    if (!url) return res.status(400).json({ error: 'URL обязателен' });
 
     const bot = getBot();
-    if (!bot) return res.status(500).json({ error: 'Bot not initialized' });
+    if (!bot) return res.status(500).json({ error: 'Бот не инициализирован' });
 
     // Extract username — handles t.me/username, t.me/username?start=xxx, t.me/+code
     const match = url.trim().match(/t\.me\/([^/?]+)/);
@@ -75,7 +75,7 @@ router.post('/resolve-url', async (req, res) => {
     }
   } catch (error) {
     console.error('Resolve URL error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -97,7 +97,7 @@ router.get('/reward-price', async (req, res) => {
     });
   } catch (error) {
     console.error('Get reward price error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -113,7 +113,7 @@ router.get('/balance', async (req, res) => {
     res.json({ ad_balance: user?.ad_balance || 0 });
   } catch (error) {
     console.error('Get ad balance error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -128,7 +128,7 @@ router.post('/deposit', async (req, res) => {
     const { amount } = req.body;
 
     if (!amount || amount <= 0 || amount > 1000000) {
-      return res.status(400).json({ error: 'Invalid amount (1 — 1,000,000)' });
+      return res.status(400).json({ error: 'Неверная сумма (1 — 1,000,000)' });
     }
 
     const result = await db.transaction(async (tx) => {
@@ -148,7 +148,7 @@ router.post('/deposit', async (req, res) => {
     res.json({ success: true, ad_balance: result.ad_balance });
   } catch (error) {
     console.error('Deposit error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -170,7 +170,7 @@ router.get('/tasks', async (req, res) => {
     res.json({ tasks });
   } catch (error) {
     console.error('Get ad tasks error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -193,12 +193,12 @@ router.post('/tasks', async (req, res) => {
 
     // Validation
     if (!title || !url || !type || !max_completions) {
-      return res.status(400).json({ error: 'All fields are required' });
+      return res.status(400).json({ error: 'Все поля обязательны' });
     }
 
     const validTypes = ['subscribe_channel', 'start_bot', 'visit_link'];
     if (!validTypes.includes(type)) {
-      return res.status(400).json({ error: 'Invalid task type' });
+      return res.status(400).json({ error: 'Неверный тип задания' });
     }
 
     // Validate URL matches task type
@@ -242,7 +242,7 @@ router.post('/tasks', async (req, res) => {
     }
 
     if (max_completions < 1 || max_completions > 100000) {
-      return res.status(400).json({ error: 'Max completions must be 1–100,000' });
+      return res.status(400).json({ error: 'Количество выполнений: 1–100,000' });
     }
 
     const totalCost = adPrice * max_completions;
@@ -279,7 +279,7 @@ router.post('/tasks', async (req, res) => {
     }
   } catch (error) {
     console.error('Create ad task error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -296,11 +296,11 @@ router.put('/tasks/:id', async (req, res) => {
 
     const task = await db.get('SELECT * FROM ad_tasks WHERE id = ? AND advertiser_id = ?', taskId, userId);
     if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
+      return res.status(404).json({ error: 'Задание не найдено' });
     }
 
     if (!['active', 'paused'].includes(status)) {
-      return res.status(400).json({ error: 'Status must be active or paused' });
+      return res.status(400).json({ error: 'Статус должен быть active или paused' });
     }
 
     await db.run('UPDATE ad_tasks SET status = ? WHERE id = ?', status, taskId);
@@ -309,7 +309,7 @@ router.put('/tasks/:id', async (req, res) => {
     res.json({ success: true, task: updated });
   } catch (error) {
     console.error('Update ad task error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -325,7 +325,7 @@ router.delete('/tasks/:id', async (req, res) => {
 
     const task = await db.get('SELECT * FROM ad_tasks WHERE id = ? AND advertiser_id = ?', taskId, userId);
     if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
+      return res.status(404).json({ error: 'Задание не найдено' });
     }
 
     const remaining = (task.max_completions - task.current_completions) * task.reward;
@@ -350,7 +350,7 @@ router.delete('/tasks/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Delete ad task error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -399,7 +399,7 @@ router.get('/stats', async (req, res) => {
     });
   } catch (error) {
     console.error('Get ad stats error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 /**
@@ -440,7 +440,7 @@ router.delete('/tasks/:id', async (req, res) => {
     res.json({ success: true, refund, ad_balance: user.ad_balance });
   } catch (error) {
     console.error('Delete ad task error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 

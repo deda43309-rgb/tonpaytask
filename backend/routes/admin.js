@@ -35,7 +35,7 @@ router.get('/stats', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin stats error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -50,7 +50,7 @@ router.get('/tasks', async (req, res) => {
     res.json({ tasks });
   } catch (error) {
     console.error('Admin get tasks error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -64,7 +64,7 @@ router.post('/tasks', async (req, res) => {
     const { type, title, description, reward, target_url, target_id, icon, sort_order, max_completions, image_url } = req.body;
 
     if (!type || !title || !target_url) {
-      return res.status(400).json({ error: 'type, title, and target_url are required' });
+      return res.status(400).json({ error: 'Тип, название и URL обязательны' });
     }
     if (!max_completions || max_completions < 1) {
       return res.status(400).json({ error: 'Выберите кол-во выполнений' });
@@ -109,7 +109,7 @@ router.post('/tasks', async (req, res) => {
     res.json({ task: result, admin_balance: systemBalance - totalCost });
   } catch (error) {
     console.error('Admin create task error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -125,7 +125,7 @@ router.put('/tasks/:id', async (req, res) => {
 
     const existing = await db.get('SELECT * FROM tasks WHERE id = ?', taskId);
     if (!existing) {
-      return res.status(404).json({ error: 'Task not found' });
+      return res.status(404).json({ error: 'Задание не найдено' });
     }
 
     await db.run(`
@@ -153,7 +153,7 @@ router.put('/tasks/:id', async (req, res) => {
     res.json({ task });
   } catch (error) {
     console.error('Admin update task error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -185,7 +185,7 @@ router.delete('/tasks/:id', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Admin delete task error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -218,7 +218,7 @@ router.get('/users', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin get users error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -235,7 +235,7 @@ router.get('/settings', async (req, res) => {
     res.json({ settings });
   } catch (error) {
     console.error('Admin get settings error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -282,7 +282,7 @@ router.put('/settings', async (req, res) => {
     res.json({ success: true, settings });
   } catch (error) {
     console.error('Admin update settings error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -320,7 +320,7 @@ router.post('/reset', async (req, res) => {
     res.json({ success: true, message: 'Все данные удалены' });
   } catch (error) {
     console.error('Admin reset error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
@@ -405,7 +405,7 @@ router.get('/ad-revenue', async (req, res) => {
     });
   } catch (error) {
     console.error('Admin ad-revenue error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
