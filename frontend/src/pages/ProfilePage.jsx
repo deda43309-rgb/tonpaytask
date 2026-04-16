@@ -100,7 +100,7 @@ export default function ProfilePage({ user }) {
         const karmaLabel = karma >= 40 ? '🌟 Отличная' : karma >= 25 ? '⚡ Нормальная' : karma >= 10 ? '⚠️ Низкая' : '🚫 Критическая';
         return (
           <div className="mt-16 animate-slide" style={{ animationDelay: '120ms' }}>
-            <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }} onClick={() => navigate('/karma')}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 22 }}>☯️</span>
                 <div>
@@ -108,9 +108,12 @@ export default function ProfilePage({ user }) {
                   <div style={{ fontSize: 11, color: karmaColor, fontWeight: 600 }}>{karmaLabel}</div>
                 </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: karmaColor }}>{karma}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>из 50</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: karmaColor }}>{karma}</div>
+                  <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>из 50</div>
+                </div>
+                <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>›</span>
               </div>
             </div>
           </div>
@@ -195,6 +198,18 @@ export default function ProfilePage({ user }) {
           >
             <span className="profile-menu-icon">📋</span>
             <span className="profile-menu-label">Мои задания</span>
+            <span className="profile-menu-arrow">›</span>
+          </button>
+
+          <div className="profile-menu-divider" />
+
+          <button
+            className="profile-menu-item"
+            onClick={() => { hapticFeedback('light'); navigate('/karma'); }}
+            id="menu-karma"
+          >
+            <span className="profile-menu-icon">☯️</span>
+            <span className="profile-menu-label">Система кармы</span>
             <span className="profile-menu-arrow">›</span>
           </button>
 

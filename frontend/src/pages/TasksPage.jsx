@@ -12,7 +12,7 @@ const filterOptions = [
   { key: 'visit_link', label: '🔗 Ссылки' },
 ];
 
-export default function TasksPage({ onUserUpdate }) {
+export default function TasksPage({ user, onUserUpdate }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -73,10 +73,12 @@ export default function TasksPage({ onUserUpdate }) {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const userBalance = parseFloat(user?.balance || 0);
   const filteredTasks = (filter === 'all'
     ? tasks
     : tasks.filter(t => t.type === filter)
-  ).filter(t => !t.is_completed);
+  ).filter(t => !t.is_completed)
+   .filter(t => !(t.type === 'subscribe_channel' && userBalance <= 0));
 
   if (loading) return <Loader text="Загрузка заданий..." />;
 

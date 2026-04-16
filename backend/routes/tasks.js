@@ -299,8 +299,14 @@ router.post('/:id/complete-ad', async (req, res) => {
         );
       }
 
-      return await tx.get('SELECT balance, total_earned, tasks_completed FROM users WHERE id = ?', userId);
+      return await tx.get('SELECT balance, total_earned, tasks_completed, karma FROM users WHERE id = ?', userId);
     });
+
+    // +1 karma every 10 tasks (cap at 50)
+    if (updatedUser.tasks_completed > 0 && updatedUser.tasks_completed % 10 === 0) {
+      await db.run("UPDATE users SET karma = LEAST(50, COALESCE(karma, 50) + 1) WHERE id = ?", userId);
+      updatedUser.karma = Math.min(50, (updatedUser.karma || 50) + 1);
+    }
 
     res.json({
       success: true,

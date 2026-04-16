@@ -39,6 +39,8 @@ router.get('/me', async (req, res) => {
         tasks_completed: user.tasks_completed,
         referral_count: parseInt(refCount.count),
         is_admin: adminIds.includes(user.id) || user.is_admin ? 1 : 0,
+        karma: user.karma ?? 50,
+        is_blocked: user.is_blocked || 0,
         created_at: user.created_at,
       }
     });

@@ -109,7 +109,7 @@ export default function App() {
         <div style={{ paddingTop: 48 }}>
         <Routes>
           <Route path="/" element={<HomePage user={user} onUserUpdate={handleUserUpdate} />} />
-          <Route path="/tasks" element={<TasksPage onUserUpdate={handleUserUpdate} />} />
+          <Route path="/tasks" element={<TasksPage user={user} onUserUpdate={handleUserUpdate} />} />
           <Route path="/referral" element={<ReferralPage user={user} />} />
           <Route path="/profile" element={<ProfilePage user={user} />} />
           <Route path="/admin" element={<AdminPage user={user} />} />
