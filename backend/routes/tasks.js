@@ -157,14 +157,16 @@ router.post('/:id/complete', async (req, res) => {
       }
 
       // Get updated user
-      return await tx.get('SELECT balance, total_earned, tasks_completed, karma FROM users WHERE id = ?', userId);
-    });
+      const userAfter = await tx.get('SELECT balance, total_earned, tasks_completed, karma FROM users WHERE id = ?', userId);
 
-    // +1 karma every 10 tasks (cap at 50)
-    if (updatedUser.tasks_completed > 0 && updatedUser.tasks_completed % 10 === 0) {
-      await db.run("UPDATE users SET karma = LEAST(50, COALESCE(karma, 50) + 1) WHERE id = ?", userId);
-      updatedUser.karma = Math.min(50, (updatedUser.karma || 50) + 1);
-    }
+      // +1 karma every 10 tasks (cap at 50) — inside transaction to avoid race condition
+      if (userAfter.tasks_completed > 0 && userAfter.tasks_completed % 10 === 0) {
+        await tx.run("UPDATE users SET karma = LEAST(50, COALESCE(karma, 50) + 1) WHERE id = ?", userId);
+        userAfter.karma = Math.min(50, (userAfter.karma || 50) + 1);
+      }
+
+      return userAfter;
+    });
 
     res.json({
       success: true,
@@ -299,14 +301,17 @@ router.post('/:id/complete-ad', async (req, res) => {
         );
       }
 
-      return await tx.get('SELECT balance, total_earned, tasks_completed, karma FROM users WHERE id = ?', userId);
-    });
+      // Get updated user
+      const userAfter = await tx.get('SELECT balance, total_earned, tasks_completed, karma FROM users WHERE id = ?', userId);
 
-    // +1 karma every 10 tasks (cap at 50)
-    if (updatedUser.tasks_completed > 0 && updatedUser.tasks_completed % 10 === 0) {
-      await db.run("UPDATE users SET karma = LEAST(50, COALESCE(karma, 50) + 1) WHERE id = ?", userId);
-      updatedUser.karma = Math.min(50, (updatedUser.karma || 50) + 1);
-    }
+      // +1 karma every 10 tasks (cap at 50) — inside transaction to avoid race condition
+      if (userAfter.tasks_completed > 0 && userAfter.tasks_completed % 10 === 0) {
+        await tx.run("UPDATE users SET karma = LEAST(50, COALESCE(karma, 50) + 1) WHERE id = ?", userId);
+        userAfter.karma = Math.min(50, (userAfter.karma || 50) + 1);
+      }
+
+      return userAfter;
+    });
 
     res.json({
       success: true,

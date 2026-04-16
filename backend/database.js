@@ -344,6 +344,8 @@ async function initTables() {
     ['admin_balance', '0'],
     ['sub_check_hours', '72'],
     ['unsub_penalty', '50'],
+    ['referral_bonus', '100'],
+    ['daily_bonus', '50'],
   ];
   for (const [key, value] of defaults) {
     try {

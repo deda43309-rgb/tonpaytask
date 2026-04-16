@@ -20,8 +20,9 @@ export default function BottomNav() {
     }
   };
 
-  // Don't show on admin page
-  if (location.pathname.startsWith('/admin')) return null;
+  // Don't show on sub-pages without bottom nav relevance
+  const hiddenPaths = ['/admin', '/advertiser', '/completions', '/karma'];
+  if (hiddenPaths.some(p => location.pathname.startsWith(p))) return null;
 
   return (
     <nav className="bottom-nav" id="bottom-nav">

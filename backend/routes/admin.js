@@ -202,6 +202,7 @@ router.delete('/tasks/:id', async (req, res) => {
       }
     }
 
+    await db.run("DELETE FROM subscription_checks WHERE task_id = ? AND task_type = 'admin'", taskId);
     await db.run('DELETE FROM task_completions WHERE task_id = ?', taskId);
     await db.run('DELETE FROM tasks WHERE id = ?', taskId);
 

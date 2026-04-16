@@ -124,6 +124,11 @@ function initBot(token) {
     }
   });
 
+  // Handle polling errors to prevent crashes
+  bot.on('polling_error', (error) => {
+    console.error('🤖 Bot polling error:', error.code, error.message);
+  });
+
   console.log('🤖 Telegram Bot started');
   return bot;
 }
