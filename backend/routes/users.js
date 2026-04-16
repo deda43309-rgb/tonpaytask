@@ -162,6 +162,51 @@ router.get('/referrals', async (req, res) => {
 });
 
 /**
+ * GET /api/users/completions
+ * История выполненных заданий пользователя
+ */
+router.get('/completions', async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.telegramUser.id;
+
+    const adminCompletions = await db.all(`
+      SELECT tc.id, tc.completed_at, t.title, t.reward, t.type, t.icon, t.image_url, 'admin' as source
+      FROM task_completions tc
+      JOIN tasks t ON t.id = tc.task_id
+      WHERE tc.user_id = ?
+      ORDER BY tc.completed_at DESC
+    `, userId);
+
+    const adCompletions = await db.all(`
+      SELECT atc.id, atc.completed_at, at2.title, at2.reward, at2.type, at2.image_url, 'ad' as source
+      FROM ad_task_completions atc
+      JOIN ad_tasks at2 ON at2.id = atc.task_id
+      WHERE atc.user_id = ?
+      ORDER BY atc.completed_at DESC
+    `, userId);
+
+    const all = [...adminCompletions, ...adCompletions]
+      .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+
+    const totalReward = all.reduce((sum, c) => sum + parseFloat(c.reward || 0), 0);
+
+    res.json({
+      completions: all,
+      stats: {
+        total: all.length,
+        total_reward: totalReward,
+        admin_count: adminCompletions.length,
+        ad_count: adCompletions.length,
+      },
+    });
+  } catch (error) {
+    console.error('Get completions error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
  * GET /api/users/penalties
  * Штрафы и активные проверки подписок пользователя
  */

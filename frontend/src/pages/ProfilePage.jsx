@@ -166,7 +166,7 @@ export default function ProfilePage({ user }) {
 
           <button
             className="profile-menu-item"
-            onClick={() => { hapticFeedback('light'); navigate('/tasks'); }}
+            onClick={() => { hapticFeedback('light'); navigate('/completions'); }}
             id="menu-tasks"
           >
             <span className="profile-menu-icon">📋</span>
