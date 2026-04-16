@@ -5,10 +5,10 @@ import { formatTON } from '../utils/format';
 import * as api from '../utils/api';
 
 const levels = [
-  { min: 80, max: 100, label: '🌟 Отличная', color: '#34c759', desc: 'Вы надёжный пользователь. Все функции доступны.' },
-  { min: 50, max: 79, label: '⚡ Нормальная', color: '#ff9500', desc: 'Карма в норме, но будьте внимательны.' },
-  { min: 20, max: 49, label: '⚠️ Низкая', color: '#ff6b00', desc: 'Внимание! Ещё несколько штрафов могут привести к блокировке.' },
-  { min: 0, max: 19, label: '🚫 Критическая', color: '#ff3b30', desc: 'Срочно выполняйте задания, чтобы восстановить карму!' },
+  { min: 80, max: 100, label: '🌟 Отличная', color: '#34c759', desc: '+5% к награде за задания', modifier: '+5%' },
+  { min: 50, max: 79, label: '⚡ Нормальная', color: '#ff9500', desc: 'Стандартная награда без изменений', modifier: '0%' },
+  { min: 20, max: 49, label: '⚠️ Низкая', color: '#ff6b00', desc: '-10% от награды за задания', modifier: '-10%' },
+  { min: 0, max: 19, label: '🚫 Критическая', color: '#ff3b30', desc: '-15% от награды за задания', modifier: '-15%' },
 ];
 
 export default function KarmaPage({ user }) {
@@ -147,22 +147,33 @@ export default function KarmaPage({ user }) {
       {/* Levels */}
       <h2 style={{ fontSize: 15, fontWeight: 700, margin: '20px 0 10px', paddingLeft: 4 }}>📊 Уровни кармы</h2>
       <div className="animate-slide" style={{ animationDelay: '240ms' }}>
-        {levels.map((level, i) => (
+        {levels.map((level, i) => {
+          const isActive = karma >= level.min && karma <= level.max;
+          return (
           <div key={i} className="card" style={{
             padding: '10px 14px', marginBottom: 8,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            border: karma >= level.min && karma <= level.max ? `1px solid ${level.color}55` : 'none',
-            background: karma >= level.min && karma <= level.max ? `${level.color}11` : undefined
+            border: isActive ? `1px solid ${level.color}55` : 'none',
+            background: isActive ? `${level.color}11` : undefined
           }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: level.color }}>{level.label}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{level.desc}</div>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: level.color, whiteSpace: 'nowrap', marginLeft: 8 }}>
-              {level.min}–{level.max}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginLeft: 8 }}>
+              <span style={{
+                fontSize: 11, fontWeight: 800, color: '#fff', padding: '2px 6px', borderRadius: 6,
+                background: level.modifier.startsWith('+') ? '#34c759' : level.modifier === '0%' ? '#8e8e93' : '#ff3b30',
+              }}>
+                {level.modifier}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: level.color, whiteSpace: 'nowrap' }}>
+                {level.min}–{level.max}
+              </span>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Penalty History */}
