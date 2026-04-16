@@ -161,4 +161,49 @@ router.get('/referrals', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/users/penalties
+ * Штрафы и активные проверки подписок пользователя
+ */
+router.get('/penalties', async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.telegramUser.id;
+
+    // Get all subscription checks for this user
+    const penalties = await db.all(`
+      SELECT sc.*, 
+        CASE 
+          WHEN sc.task_type = 'admin' THEN (SELECT title FROM tasks WHERE id = sc.task_id)
+          ELSE (SELECT title FROM ad_tasks WHERE id = sc.task_id)
+        END as task_title
+      FROM subscription_checks sc
+      WHERE sc.user_id = ?
+      ORDER BY sc.created_at DESC
+      LIMIT 50
+    `, userId);
+
+    const stats = await db.get(`
+      SELECT 
+        COUNT(*) FILTER (WHERE status = 'penalized') as penalty_count,
+        COALESCE(SUM(penalty_applied) FILTER (WHERE status = 'penalized'), 0) as total_penalty,
+        COUNT(*) FILTER (WHERE status = 'pending') as active_checks
+      FROM subscription_checks
+      WHERE user_id = ?
+    `, userId);
+
+    res.json({
+      penalties,
+      stats: {
+        penalty_count: parseInt(stats.penalty_count),
+        total_penalty: parseFloat(stats.total_penalty),
+        active_checks: parseInt(stats.active_checks),
+      },
+    });
+  } catch (error) {
+    console.error('Get penalties error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
 module.exports = router;

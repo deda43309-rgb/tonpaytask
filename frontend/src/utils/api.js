@@ -43,6 +43,7 @@ export const getMe = () => request('/users/me');
 export const claimDailyBonus = () =>
   request('/users/daily-bonus', { method: 'POST' });
 export const getReferrals = () => request('/users/referrals');
+export const getPenalties = () => request('/users/penalties');
 
 // Admin
 export const getAdminStats = () => request('/admin/stats');
