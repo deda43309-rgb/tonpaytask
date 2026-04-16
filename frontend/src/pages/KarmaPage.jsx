@@ -5,10 +5,10 @@ import { formatTON } from '../utils/format';
 import * as api from '../utils/api';
 
 const levels = [
-  { min: 40, max: 50, label: '🌟 Отличная', color: '#34c759', desc: 'Вы надёжный пользователь. Все функции доступны.' },
-  { min: 25, max: 39, label: '⚡ Нормальная', color: '#ff9500', desc: 'Карма в норме, но будьте внимательны.' },
-  { min: 10, max: 24, label: '⚠️ Низкая', color: '#ff6b00', desc: 'Внимание! Ещё несколько штрафов могут привести к блокировке.' },
-  { min: 0, max: 9, label: '🚫 Критическая', color: '#ff3b30', desc: 'Срочно выполняйте задания, чтобы восстановить карму!' },
+  { min: 80, max: 100, label: '🌟 Отличная', color: '#34c759', desc: 'Вы надёжный пользователь. Все функции доступны.' },
+  { min: 50, max: 79, label: '⚡ Нормальная', color: '#ff9500', desc: 'Карма в норме, но будьте внимательны.' },
+  { min: 20, max: 49, label: '⚠️ Низкая', color: '#ff6b00', desc: 'Внимание! Ещё несколько штрафов могут привести к блокировке.' },
+  { min: 0, max: 19, label: '🚫 Критическая', color: '#ff3b30', desc: 'Срочно выполняйте задания, чтобы восстановить карму!' },
 ];
 
 export default function KarmaPage({ user }) {
@@ -35,9 +35,9 @@ export default function KarmaPage({ user }) {
   const checkHours = settings?.sub_check_hours || 72;
 
   const rules = [
-    { icon: '🎯', title: 'Начальная карма', desc: 'При регистрации каждый пользователь получает 50 очков кармы.' },
+    { icon: '🎯', title: 'Начальная карма', desc: 'При регистрации каждый пользователь получает 50 очков кармы из 100 возможных.' },
     { icon: '📉', title: 'Штраф за отписку', desc: `Отписка от канала в течение ${checkHours}ч снимает 10 кармы и ${formatTON(penaltyAmount)} TON с баланса.`, color: '#ff3b30' },
-    { icon: '📈', title: 'Награда за задания', desc: `За каждые 10 выполненных заданий вы получаете +1 к карме (макс. 50).`, color: '#34c759' },
+    { icon: '📈', title: 'Награда за задания', desc: `За каждые 10 выполненных заданий вы получаете +1 к карме (макс. 100).`, color: '#34c759' },
     { icon: '🔒', title: 'Обязательная подписка', desc: `После выполнения задания на подписку вы обязаны оставаться подписанным ${checkHours} часов.` },
     { icon: '🚫', title: 'Блокировка', desc: 'При карме = 0 или отрицательном балансе аккаунт блокируется автоматически.', color: '#ff3b30' },
     { icon: '🔓', title: 'Разблокировка', desc: 'Для разблокировки обратитесь к администратору.' },
@@ -71,14 +71,14 @@ export default function KarmaPage({ user }) {
       {/* Current Status */}
       <div className="card animate-slide" style={{ padding: 20, textAlign: 'center', border: `1px solid ${currentLevel.color}33` }}>
         <div style={{ fontSize: 48, fontWeight: 900, color: currentLevel.color }}>{karma}</div>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>из 50</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>из 100</div>
         <div style={{ fontSize: 16, fontWeight: 700, color: currentLevel.color }}>{currentLevel.label}</div>
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{currentLevel.desc}</div>
 
         {/* Progress bar */}
         <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.06)', borderRadius: 8, height: 8, overflow: 'hidden' }}>
           <div style={{
-            width: `${(karma / 50) * 100}%`,
+            width: `${(karma / 100) * 100}%`,
             height: '100%',
             background: `linear-gradient(90deg, ${currentLevel.color}, ${currentLevel.color}88)`,
             borderRadius: 8,
@@ -87,7 +87,7 @@ export default function KarmaPage({ user }) {
         </div>
 
         {/* Next karma point progress */}
-        {karma < 50 && (
+        {karma < 100 && (
           <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
               До следующей +1 кармы:
