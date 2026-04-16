@@ -129,14 +129,18 @@ router.post('/:id/complete', async (req, res) => {
       // Add completion
       await tx.run('INSERT INTO task_completions (user_id, task_id) VALUES (?, ?)', userId, taskId);
 
-      // Check karma penalty: low karma (20-49) = -10% reward to system
+      // Karma reward modifier: high karma (80-100) = +5% bonus, low karma (20-49) = -10% penalty
       const userKarma = await tx.get('SELECT karma FROM users WHERE id = ?', userId);
       const karma = userKarma?.karma ?? 50;
-      const karmaPenaltyRate = (karma >= 20 && karma < 50) ? 0.10 : 0;
-      const karmaPenalty = Math.round(task.reward * karmaPenaltyRate * 100) / 100;
-      const actualReward = task.reward - karmaPenalty;
+      let karmaModifier = 0;
+      if (karma >= 80) karmaModifier = 0.05;       // +5% bonus
+      else if (karma >= 20 && karma < 50) karmaModifier = -0.10; // -10% penalty
+      const karmaAdjust = Math.round(task.reward * Math.abs(karmaModifier) * 100) / 100;
+      const actualReward = karmaModifier >= 0 
+        ? task.reward + karmaAdjust 
+        : task.reward - karmaAdjust;
 
-      // Update user balance (with reduced reward if low karma)
+      // Update user balance
       await tx.run(`
         UPDATE users SET 
           balance = balance + ?,
@@ -146,7 +150,7 @@ router.post('/:id/complete', async (req, res) => {
         WHERE id = ?
       `, actualReward, actualReward, userId);
 
-      // Deduct full reward from admin balance, but karma penalty stays in system
+      // Deduct from admin balance (full amount + bonus if high karma)
       await tx.run("UPDATE settings SET value = CAST(CAST(value AS NUMERIC) - ? AS TEXT) WHERE key = 'admin_balance'", actualReward);
 
       // Update task completion count
@@ -253,14 +257,18 @@ router.post('/:id/complete-ad', async (req, res) => {
       // Add completion
       await tx.run('INSERT INTO ad_task_completions (task_id, user_id) VALUES (?, ?)', taskId, userId);
 
-      // Check karma penalty: low karma (20-49) = -10% reward to system
+      // Karma reward modifier: high karma (80-100) = +5% bonus, low karma (20-49) = -10% penalty
       const userKarmaRow = await tx.get('SELECT karma FROM users WHERE id = ?', userId);
       const karma = userKarmaRow?.karma ?? 50;
-      const karmaPenaltyRate = (karma >= 20 && karma < 50) ? 0.10 : 0;
-      const karmaPenalty = Math.round(userReward * karmaPenaltyRate * 100) / 100;
-      const actualUserReward = userReward - karmaPenalty;
+      let karmaModifier = 0;
+      if (karma >= 80) karmaModifier = 0.05;       // +5% bonus
+      else if (karma >= 20 && karma < 50) karmaModifier = -0.10; // -10% penalty
+      const karmaAdjust = Math.round(userReward * Math.abs(karmaModifier) * 100) / 100;
+      const actualUserReward = karmaModifier >= 0
+        ? userReward + karmaAdjust
+        : userReward - karmaAdjust;
 
-      // Credit user balance (reduced if low karma)
+      // Credit user balance
       await tx.run(`
         UPDATE users SET 
           balance = balance + ?,
@@ -291,11 +299,10 @@ router.post('/:id/complete-ad', async (req, res) => {
         actualCommission = task.reward - userReward - refReward;
       }
 
-      // Log system commission (includes unclaimed ref reward if no referrer + karma penalty)
-      const totalCommission = actualCommission + karmaPenalty;
+      // Log system commission (includes unclaimed ref reward if no referrer + karma adjustments)
+      const totalCommission = actualCommission + (karmaModifier < 0 ? karmaAdjust : -karmaAdjust);
       if (totalCommission > 0) {
         await tx.run('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)', taskId, null, 'commission', totalCommission);
-        // Credit admin balance with commission + karma penalty
         await tx.run("UPDATE settings SET value = CAST(CAST(value AS NUMERIC) + ? AS TEXT) WHERE key = 'admin_balance'", totalCommission);
       }
 
