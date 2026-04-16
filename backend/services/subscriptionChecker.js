@@ -16,7 +16,7 @@ function startSubscriptionChecker() {
 
 async function scheduleNextCheck() {
   try {
-    await runCheck();
+    await runCheck(false); // automatic — only overdue checks
   } catch (e) {
     console.error('Subscription check error:', e);
   }
@@ -46,12 +46,16 @@ function stopSubscriptionChecker() {
 
 /**
  * Run check manually (for admin button)
+ * forceAll = true — checks ALL pending records regardless of check_after time
  */
 async function runCheckNow() {
-  return await runCheck();
+  return await runCheck(true); // manual — check ALL pending
 }
 
-async function runCheck() {
+/**
+ * @param {boolean} forceAll - if true, check all pending (manual mode). If false, only overdue (automatic mode).
+ */
+async function runCheck(forceAll = false) {
   const bot = getBot();
   if (!bot) {
     console.log('🔍 Subscription check skipped — bot not initialized');
@@ -61,17 +65,30 @@ async function runCheck() {
   const db = getDb();
 
   try {
-    // Get all pending checks where check_after has passed
-    const pendingChecks = await db.all(`
-      SELECT * FROM subscription_checks 
-      WHERE status = 'pending' AND check_after <= NOW()
-      ORDER BY check_after ASC
-      LIMIT 100
-    `);
+    // Manual mode: check ALL pending records
+    // Automatic mode: only check records where check_after has passed
+    let query;
+    if (forceAll) {
+      query = `
+        SELECT * FROM subscription_checks 
+        WHERE status = 'pending'
+        ORDER BY check_after ASC
+        LIMIT 200
+      `;
+    } else {
+      query = `
+        SELECT * FROM subscription_checks 
+        WHERE status = 'pending' AND check_after <= NOW()
+        ORDER BY check_after ASC
+        LIMIT 100
+      `;
+    }
+
+    const pendingChecks = await db.all(query);
+
+    console.log(`🔍 [SubCheck] Mode: ${forceAll ? 'MANUAL (all pending)' : 'AUTO (overdue only)'}. Found ${pendingChecks.length} checks to process.`);
 
     if (pendingChecks.length === 0) return { passed: 0, failed: 0 };
-
-    console.log(`🔍 Checking ${pendingChecks.length} subscriptions...`);
 
     // Get penalty setting
     const penaltyRow = await db.get("SELECT value FROM settings WHERE key = 'unsub_penalty'");
@@ -82,7 +99,11 @@ async function runCheck() {
 
     for (const check of pendingChecks) {
       try {
+        console.log(`🔍 [SubCheck] Checking user ${check.user_id} in channel "${check.channel_id}" (task_type=${check.task_type}, task_id=${check.task_id})`);
+        
         const isSubscribed = await verifySubscription(bot, check.channel_id, check.user_id);
+
+        console.log(`🔍 [SubCheck] User ${check.user_id} in "${check.channel_id}" => ${isSubscribed ? 'SUBSCRIBED ✅' : 'NOT SUBSCRIBED ❌'}`);
 
         if (isSubscribed) {
           // User is still subscribed — mark as passed
@@ -144,10 +165,11 @@ async function runCheck() {
             console.error(`Failed to notify user ${check.user_id}:`, notifyErr.message);
           }
 
+          console.log(`⚠️ [SubCheck] PENALIZED user ${check.user_id}: -${penalty} TON for unsubscribing from "${check.channel_id}"`);
           failed++;
         }
       } catch (checkErr) {
-        console.error(`Subscription check error for id=${check.id}:`, checkErr.message);
+        console.error(`Subscription check error for id=${check.id}, channel="${check.channel_id}", user=${check.user_id}:`, checkErr.message);
         // If we can't check (channel might be deleted etc), mark as passed
         await db.run(
           "UPDATE subscription_checks SET status = 'passed', checked_at = NOW() WHERE id = ?",
@@ -156,7 +178,7 @@ async function runCheck() {
       }
     }
 
-    console.log(`🔍 Subscription check done: ${passed} passed, ${failed} penalized`);
+    console.log(`🔍 [SubCheck] Done: ${passed} passed, ${failed} penalized`);
     return { passed, failed };
   } catch (error) {
     console.error('Subscription checker error:', error);
@@ -169,12 +191,21 @@ async function runCheck() {
  */
 async function verifySubscription(bot, channelId, userId) {
   try {
+    console.log(`🔍 [SubCheck] getChatMember("${channelId}", ${userId})`);
     const chatMember = await bot.getChatMember(channelId, userId);
+    console.log(`🔍 [SubCheck] getChatMember result: status="${chatMember.status}"`);
     const validStatuses = ['member', 'administrator', 'creator'];
     return validStatuses.includes(chatMember.status);
   } catch (error) {
-    // If we get "user not found in chat" or similar, they're not subscribed
-    if (error.message && (error.message.includes('user not found') || error.message.includes('CHAT_ADMIN_REQUIRED'))) {
+    console.log(`🔍 [SubCheck] getChatMember error: ${error.message}`);
+    // "left" or "kicked" status means user is not subscribed
+    // "user not found" or "CHAT_ADMIN_REQUIRED" also means not subscribed
+    if (error.message && (
+      error.message.includes('user not found') || 
+      error.message.includes('CHAT_ADMIN_REQUIRED') ||
+      error.message.includes('chat not found') ||
+      error.message.includes('member list is inaccessible')
+    )) {
       return false;
     }
     throw error; // rethrow unexpected errors

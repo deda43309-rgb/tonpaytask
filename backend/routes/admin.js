@@ -289,15 +289,52 @@ router.put('/settings', async (req, res) => {
 
 /**
  * POST /api/admin/check-subscriptions
- * Запустить проверку подписок вручную
+ * Запустить проверку подписок вручную (проверяет ВСЕ pending, игнорируя check_after)
  */
 router.post('/check-subscriptions', async (req, res) => {
   try {
+    const db = getDb();
+    
+    // Show what we have before checking
+    const beforeCount = await db.get("SELECT COUNT(*) as count FROM subscription_checks WHERE status = 'pending'");
+    console.log(`🔍 [Admin] Manual check triggered. Pending checks before: ${beforeCount.count}`);
+    
     const result = await runCheckNow();
-    res.json({ success: true, message: `Проверено: ${result.passed} ок, ${result.failed} штрафов` });
+    res.json({ 
+      success: true, 
+      message: `Проверено: ${result.passed} ок, ${result.failed} штрафов`,
+      pending_before: parseInt(beforeCount.count),
+      ...result 
+    });
   } catch (error) {
     console.error('Manual subscription check error:', error);
     res.status(500).json({ error: 'Ошибка проверки подписок' });
+  }
+});
+
+/**
+ * GET /api/admin/subscription-checks
+ * Просмотр всех записей subscription_checks (для отладки)
+ */
+router.get('/subscription-checks', async (req, res) => {
+  try {
+    const db = getDb();
+    const checks = await db.all(`
+      SELECT sc.*, u.first_name, u.username
+      FROM subscription_checks sc
+      LEFT JOIN users u ON u.id = sc.user_id
+      ORDER BY sc.created_at DESC
+      LIMIT 100
+    `);
+    const stats = await db.all(`
+      SELECT status, COUNT(*) as count 
+      FROM subscription_checks 
+      GROUP BY status
+    `);
+    res.json({ checks, stats });
+  } catch (error) {
+    console.error('Admin subscription-checks error:', error);
+    res.status(500).json({ error: 'Ошибка' });
   }
 });
 
