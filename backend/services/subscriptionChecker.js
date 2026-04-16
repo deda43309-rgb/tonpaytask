@@ -105,6 +105,22 @@ async function runCheck() {
             "UPDATE subscription_checks SET status = 'passed', checked_at = NOW() WHERE id = ?",
             check.id
           );
+
+          // Notify user they can unsubscribe now
+          try {
+            const taskInfo = check.task_type === 'admin'
+              ? await db.get('SELECT title FROM tasks WHERE id = ?', check.task_id)
+              : await db.get('SELECT title FROM ad_tasks WHERE id = ?', check.task_id);
+            const taskTitle = taskInfo?.title || `#${check.task_id}`;
+
+            bot.sendMessage(check.user_id,
+              `✅ *Можно отписаться!*\n\n` +
+              `Обязательный период подписки для задания "${taskTitle}" истёк.\n` +
+              `Теперь вы можете смело отписаться без штрафа. 🎉`,
+              { parse_mode: 'Markdown' }
+            ).catch(() => {});
+          } catch (e) {}
+
           console.log(`✅ [SubCheck] User ${check.user_id} — obligation expired, marked as PASSED`);
           expired++;
           continue;
