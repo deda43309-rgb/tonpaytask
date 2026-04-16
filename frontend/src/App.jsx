@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import BottomNav from './components/BottomNav';
+import TopBar from './components/TopBar';
 import Loader from './components/Loader';
 import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './pages/HomePage';
@@ -83,7 +84,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-bg" />
+      <TopBar user={user} />
       <ErrorBoundary>
+        <div style={{ paddingTop: 48 }}>
         <Routes>
           <Route path="/" element={<HomePage user={user} onUserUpdate={handleUserUpdate} />} />
           <Route path="/tasks" element={<TasksPage onUserUpdate={handleUserUpdate} />} />
@@ -93,6 +96,7 @@ export default function App() {
           <Route path="/advertiser" element={<AdvertiserPage user={user} />} />
           <Route path="/completions" element={<CompletionsPage />} />
         </Routes>
+        </div>
       </ErrorBoundary>
       <BottomNav />
     </BrowserRouter>
