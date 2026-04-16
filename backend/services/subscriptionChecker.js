@@ -146,7 +146,7 @@ async function runCheck() {
 
             // Deduct penalty from user balance and decrease karma
             await tx.run(
-              "UPDATE users SET balance = balance - ?, karma = GREATEST(0, COALESCE(karma, 100) - 10), updated_at = NOW() WHERE id = ?",
+              "UPDATE users SET balance = balance - ?, karma = GREATEST(0, COALESCE(karma, 50) - 10), updated_at = NOW() WHERE id = ?",
               penalty, check.user_id
             );
 
@@ -168,6 +168,22 @@ async function runCheck() {
               );
             }
           });
+
+          // Check if user should be blocked (karma=0 or negative balance)
+          const userAfter = await db.get('SELECT karma, balance FROM users WHERE id = ?', check.user_id);
+          if (userAfter && (userAfter.karma <= 0 || parseFloat(userAfter.balance) < -0.01)) {
+            await db.run("UPDATE users SET is_blocked = 1, updated_at = NOW() WHERE id = ?", check.user_id);
+            try {
+              const reason = userAfter.karma <= 0 ? 'карма достигла 0' : 'отрицательный баланс';
+              bot.sendMessage(check.user_id,
+                `🚫 *Аккаунт заблокирован!*\n\n` +
+                `Причина: ${reason}.\n` +
+                `Обратитесь к администратору для разблокировки.`,
+                { parse_mode: 'Markdown' }
+              ).catch(() => {});
+            } catch(e) {}
+            console.log(`🚫 [SubCheck] User ${check.user_id} BLOCKED — karma: ${userAfter.karma}, balance: ${userAfter.balance}`);
+          }
 
           // Send notifications via bot
           try {

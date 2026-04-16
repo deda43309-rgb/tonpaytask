@@ -4,8 +4,8 @@ import './TopBar.css';
 export default function TopBar({ user }) {
   if (!user) return null;
 
-  const karma = user.karma ?? 100;
-  const karmaColor = karma >= 80 ? '#34c759' : karma >= 50 ? '#ff9500' : karma >= 20 ? '#ff6b00' : '#ff3b30';
+  const karma = user.karma ?? 50;
+  const karmaColor = karma >= 40 ? '#34c759' : karma >= 25 ? '#ff9500' : karma >= 10 ? '#ff6b00' : '#ff3b30';
 
   return (
     <div className="topbar">

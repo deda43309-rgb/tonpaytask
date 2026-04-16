@@ -95,9 +95,9 @@ export default function ProfilePage({ user }) {
 
       {/* Karma */}
       {(() => {
-        const karma = user?.karma ?? 100;
-        const karmaColor = karma >= 80 ? '#34c759' : karma >= 50 ? '#ff9500' : karma >= 20 ? '#ff6b00' : '#ff3b30';
-        const karmaLabel = karma >= 80 ? '🌟 Отличная' : karma >= 50 ? '⚡ Нормальная' : karma >= 20 ? '⚠️ Низкая' : '🚫 Критическая';
+        const karma = user?.karma ?? 50;
+        const karmaColor = karma >= 40 ? '#34c759' : karma >= 25 ? '#ff9500' : karma >= 10 ? '#ff6b00' : '#ff3b30';
+        const karmaLabel = karma >= 40 ? '🌟 Отличная' : karma >= 25 ? '⚡ Нормальная' : karma >= 10 ? '⚠️ Низкая' : '🚫 Критическая';
         return (
           <div className="mt-16 animate-slide" style={{ animationDelay: '120ms' }}>
             <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -110,7 +110,7 @@ export default function ProfilePage({ user }) {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 22, fontWeight: 800, color: karmaColor }}>{karma}</div>
-                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>из 100</div>
+                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>из 50</div>
               </div>
             </div>
           </div>

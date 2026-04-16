@@ -87,6 +87,8 @@ router.post('/login', async (req, res) => {
         total_earned: dbUser.total_earned,
         tasks_completed: dbUser.tasks_completed,
         is_admin: isAdmin ? 1 : 0,
+        karma: dbUser.karma ?? 50,
+        is_blocked: dbUser.is_blocked || 0,
         created_at: dbUser.created_at,
       }
     });

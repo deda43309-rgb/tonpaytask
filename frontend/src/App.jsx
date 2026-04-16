@@ -81,6 +81,25 @@ export default function App() {
     );
   }
 
+  if (user?.is_blocked) {
+    return (
+      <>
+        <div className="app-bg" />
+        <div className="empty-state" style={{ minHeight: '100vh' }}>
+          <span className="empty-state-icon">🚫</span>
+          <h3 className="empty-state-title">Аккаунт заблокирован</h3>
+          <p className="empty-state-text">
+            Ваш аккаунт был заблокирован из-за нарушений.
+            Обратитесь к администратору для разблокировки.
+          </p>
+          <div style={{ marginTop: 16, padding: '8px 16px', borderRadius: 10, background: 'rgba(255,59,48,0.1)', color: '#ff3b30', fontSize: 12, fontWeight: 600 }}>
+            Карма: {user.karma ?? 0} · Баланс: {user.balance}
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <BrowserRouter>
       <div className="app-bg" />

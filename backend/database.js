@@ -186,7 +186,9 @@ async function initTables() {
   }
 
   // Add karma column
-  try { await db.exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS karma INTEGER DEFAULT 100'); } catch(e) {}
+  try { await db.exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS karma INTEGER DEFAULT 50'); } catch(e) {}
+  // Add is_blocked column
+  try { await db.exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked INTEGER DEFAULT 0'); } catch(e) {}
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
