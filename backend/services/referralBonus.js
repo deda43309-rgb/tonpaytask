@@ -64,7 +64,7 @@ async function checkAndPayReferralBonus(userId) {
       // Credit referred user
       await tx.run(
         'UPDATE users SET balance = balance + ?, total_earned = total_earned + ?, updated_at = NOW() WHERE id = ?',
-        bonus, userId
+        bonus, bonus, userId
       );
 
       // Update or create referral record with bonus amount
