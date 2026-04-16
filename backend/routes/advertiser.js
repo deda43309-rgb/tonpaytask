@@ -444,4 +444,46 @@ router.delete('/tasks/:id', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/advertiser/penalties
+ * Штрафы по заданиям рекламодателя (возвраты средств)
+ */
+router.get('/penalties', async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.telegramUser.id;
+
+    const penalties = await db.all(`
+      SELECT sc.id, sc.user_id, sc.task_id, sc.channel_id, sc.status, 
+        sc.penalty_applied, sc.checked_at, sc.created_at,
+        at2.title as task_title,
+        u.first_name, u.username
+      FROM subscription_checks sc
+      JOIN ad_tasks at2 ON at2.id = sc.task_id
+      LEFT JOIN users u ON u.id = sc.user_id
+      WHERE at2.advertiser_id = ? AND sc.task_type = 'ad' AND sc.status = 'penalized'
+      ORDER BY sc.checked_at DESC
+      LIMIT 50
+    `, userId);
+
+    const stats = await db.get(`
+      SELECT 
+        COUNT(*) as count,
+        COALESCE(SUM(sc.penalty_applied), 0) as total_refunded
+      FROM subscription_checks sc
+      JOIN ad_tasks at2 ON at2.id = sc.task_id
+      WHERE at2.advertiser_id = ? AND sc.task_type = 'ad' AND sc.status = 'penalized'
+    `, userId);
+
+    res.json({
+      penalties,
+      total_refunded: parseFloat(stats.total_refunded),
+      count: parseInt(stats.count),
+    });
+  } catch (error) {
+    console.error('Get advertiser penalties error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
 module.exports = router;

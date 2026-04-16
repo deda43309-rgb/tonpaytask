@@ -89,6 +89,7 @@ export const resolveAdUrl = (url, type) =>
   });
 export const getAdTasks = () => request('/advertiser/tasks');
 export const getAdStats = () => request('/advertiser/stats');
+export const getAdvertiserPenalties = () => request('/advertiser/penalties');
 export const createAdTask = (data) =>
   request('/advertiser/tasks', {
     method: 'POST',

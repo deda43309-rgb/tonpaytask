@@ -135,9 +135,11 @@ async function runCheck() {
             );
 
             // Return penalty to task creator as compensation
+            let advertiserId = null;
             if (check.task_type === 'ad') {
               const adTask = await tx.get('SELECT advertiser_id FROM ad_tasks WHERE id = ?', check.task_id);
               if (adTask) {
+                advertiserId = adTask.advertiser_id;
                 await tx.run(
                   'UPDATE users SET ad_balance = ad_balance + ?, updated_at = NOW() WHERE id = ?',
                   penalty, adTask.advertiser_id
@@ -151,7 +153,7 @@ async function runCheck() {
             }
           });
 
-          // Send notification to user via bot
+          // Send notifications via bot
           try {
             const taskInfo = check.task_type === 'admin'
               ? await db.get('SELECT title FROM tasks WHERE id = ?', check.task_id)
@@ -160,6 +162,7 @@ async function runCheck() {
             const taskTitle = taskInfo?.title || `#${check.task_id}`;
             const hoursLeft = Math.ceil((obligationEnd - now) / (1000 * 60 * 60));
 
+            // Notify user about penalty
             bot.sendMessage(check.user_id,
               `⚠️ *Штраф за отписку!*\n\n` +
               `Вы отписались от канала после выполнения задания "${taskTitle}".\n` +
@@ -167,9 +170,19 @@ async function runCheck() {
               `С вашего баланса списано: *-${penalty} TON*\n\n` +
               `Пожалуйста, не отписывайтесь от каналов после выполнения заданий.`,
               { parse_mode: 'Markdown' }
-            );
+            ).catch(() => {});
+
+            // Notify advertiser about refund
+            if (advertiserId) {
+              bot.sendMessage(advertiserId,
+                `💰 *Возврат средств!*\n\n` +
+                `Пользователь отписался от канала в задании "${taskTitle}".\n` +
+                `На ваш рекламный баланс возвращено: *+${penalty} TON* 💎`,
+                { parse_mode: 'Markdown' }
+              ).catch(() => {});
+            }
           } catch (notifyErr) {
-            console.error(`Failed to notify user ${check.user_id}:`, notifyErr.message);
+            console.error(`Failed to notify about penalty:`, notifyErr.message);
           }
 
           console.log(`⚠️ [SubCheck] PENALIZED user ${check.user_id}: -${penalty} TON for unsubscribing from "${check.channel_id}"`);

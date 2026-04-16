@@ -26,6 +26,7 @@ export default function AdvertiserPage({ user }) {
   const [depositAmount, setDepositAmount] = useState(1000);
   const [depositing, setDepositing] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [penaltyData, setPenaltyData] = useState(null);
 
   // Resolve state
   const [resolving, setResolving] = useState(false);
@@ -45,17 +46,19 @@ export default function AdvertiserPage({ user }) {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [balRes, tasksRes, statsRes, rewardRes] = await Promise.all([
+      const [balRes, tasksRes, statsRes, rewardRes, penRes] = await Promise.all([
         api.getAdBalance(),
         api.getAdTasks(),
         api.getAdStats(),
         api.getRewardPrice(),
+        api.getAdvertiserPenalties().catch(() => ({ penalties: [], total_refunded: 0, count: 0 })),
       ]);
       setBalance(balRes.ad_balance);
       setTasks(tasksRes.tasks);
       setStats(statsRes);
       setAdPrice(rewardRes.ad_price);
       setUserReward(rewardRes.ad_user_reward);
+      setPenaltyData(penRes);
     } catch (err) {
       console.error('Load advertiser data error:', err);
     } finally {
@@ -210,6 +213,11 @@ export default function AdvertiserPage({ user }) {
         <button className={`adv-tab ${tab === 'stats' ? 'active' : ''}`} onClick={() => { hapticFeedback('light'); setTab('stats'); }}>
           📊 Стат
         </button>
+        {penaltyData && penaltyData.count > 0 && (
+          <button className={`adv-tab ${tab === 'penalties' ? 'active' : ''}`} onClick={() => { hapticFeedback('light'); setTab('penalties'); }}>
+            ⚠️ Штрафы
+          </button>
+        )}
       </div>
 
       {/* Tab Content */}
@@ -472,6 +480,40 @@ export default function AdvertiserPage({ user }) {
               <span className="adv-stat-icon">💳</span>
               <span className="adv-stat-value gold">{formatTON(stats.total_deposited)}</span>
               <span className="adv-stat-label">Всего пополнено</span>
+            </div>
+          </div>
+        )}
+
+        {tab === 'penalties' && penaltyData && (
+          <div>
+            <div className="card" style={{ padding: 16, textAlign: 'center', background: 'linear-gradient(135deg, rgba(52,199,89,0.08), rgba(52,199,89,0.02))', border: '1px solid rgba(52,199,89,0.15)', marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>💰 Возвращено на баланс</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: '#34c759', marginTop: 4 }}>+{formatTON(penaltyData.total_refunded)} TON</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Из {penaltyData.count} штрафов пользователям</div>
+            </div>
+
+            <div className="card" style={{ padding: 0 }}>
+              {penaltyData.penalties.map((p, i) => (
+                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderBottom: i < penaltyData.penalties.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {p.task_title || `Задание #${p.task_id}`}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                      {p.first_name || p.username || `User #${p.user_id}`} отписался
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#34c759' }}>+{formatTON(p.penalty_applied)} TON</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                      {new Date(p.checked_at).toLocaleDateString('ru-RU')}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {penaltyData.penalties.length === 0 && (
+                <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>Нет штрафов</div>
+              )}
             </div>
           </div>
         )}
