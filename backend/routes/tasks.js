@@ -135,6 +135,7 @@ router.post('/:id/complete', async (req, res) => {
       let karmaModifier = 0;
       if (karma >= 80) karmaModifier = 0.05;       // +5% bonus
       else if (karma >= 20 && karma < 50) karmaModifier = -0.10; // -10% penalty
+      else if (karma < 20) karmaModifier = -0.15;  // -15% critical penalty
       const karmaAdjust = Math.round(task.reward * Math.abs(karmaModifier) * 100) / 100;
       const actualReward = karmaModifier >= 0 
         ? task.reward + karmaAdjust 
@@ -263,6 +264,7 @@ router.post('/:id/complete-ad', async (req, res) => {
       let karmaModifier = 0;
       if (karma >= 80) karmaModifier = 0.05;       // +5% bonus
       else if (karma >= 20 && karma < 50) karmaModifier = -0.10; // -10% penalty
+      else if (karma < 20) karmaModifier = -0.15;  // -15% critical penalty
       const karmaAdjust = Math.round(userReward * Math.abs(karmaModifier) * 100) / 100;
       const actualUserReward = karmaModifier >= 0
         ? userReward + karmaAdjust
