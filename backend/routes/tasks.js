@@ -49,11 +49,13 @@ router.get('/', async (req, res) => {
 
     console.log(`Tasks for user ${userId}: ${tasks.length} regular, ${adTasks.length} ad`);
 
-    // Get penalty setting for subscribe tasks
+    // Get penalty and obligation settings
     const penaltyRow = await db.get("SELECT value FROM settings WHERE key = 'unsub_penalty'");
     const unsub_penalty = parseFloat(penaltyRow?.value) || 0;
+    const checkHoursRow = await db.get("SELECT value FROM settings WHERE key = 'sub_check_hours'");
+    const sub_check_hours = parseFloat(checkHoursRow?.value) || 72;
 
-    res.json({ tasks: [...tasks, ...adTasks], unsub_penalty });
+    res.json({ tasks: [...tasks, ...adTasks], unsub_penalty, sub_check_hours });
   } catch (error) {
     console.error('Get tasks error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });

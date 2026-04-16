@@ -9,7 +9,7 @@ const typeLabels = {
   visit_link: { label: 'Ссылка', color: 'info' },
 };
 
-export default function TaskCard({ task, onComplete, penalty = 0 }) {
+export default function TaskCard({ task, onComplete, penalty = 0, subCheckHours = 0 }) {
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [started, setStarted] = useState(false);
@@ -75,6 +75,11 @@ export default function TaskCard({ task, onComplete, penalty = 0 }) {
           {task.type === 'subscribe_channel' && penalty > 0 && (
             <div style={{ fontSize: 11, color: '#ff9500', marginTop: 4 }}>
               ⚠️ Штраф за отписку: -{formatTON(penalty)} TON
+            </div>
+          )}
+          {task.type === 'subscribe_channel' && subCheckHours > 0 && (
+            <div style={{ fontSize: 11, color: '#5ac8fa', marginTop: 4 }}>
+              🔒 Подписка на {subCheckHours} ч
             </div>
           )}
         </div>

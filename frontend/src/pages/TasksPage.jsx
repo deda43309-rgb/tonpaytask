@@ -18,6 +18,7 @@ export default function TasksPage({ onUserUpdate }) {
   const [filter, setFilter] = useState('all');
   const [toast, setToast] = useState(null);
   const [penalty, setPenalty] = useState(0);
+  const [subCheckHours, setSubCheckHours] = useState(72);
 
   useEffect(() => {
     loadTasks();
@@ -28,6 +29,7 @@ export default function TasksPage({ onUserUpdate }) {
       const data = await api.getTasks();
       setTasks(data.tasks);
       setPenalty(data.unsub_penalty || 0);
+      setSubCheckHours(data.sub_check_hours || 72);
     } catch (err) {
       console.error('Failed to load tasks:', err);
     } finally {
@@ -103,7 +105,7 @@ export default function TasksPage({ onUserUpdate }) {
       {filteredTasks.length > 0 ? (
         <div className="tasks-list stagger">
           {filteredTasks.map(task => (
-            <TaskCard key={task.is_ad ? `ad-${task.id}` : task.id} task={task} onComplete={handleComplete} penalty={task.type === 'subscribe_channel' ? penalty : 0} />
+            <TaskCard key={task.is_ad ? `ad-${task.id}` : task.id} task={task} onComplete={handleComplete} penalty={task.type === 'subscribe_channel' ? penalty : 0} subCheckHours={task.type === 'subscribe_channel' ? subCheckHours : 0} />
           ))}
         </div>
       ) : (
