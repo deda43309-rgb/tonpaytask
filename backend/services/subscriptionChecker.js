@@ -144,9 +144,9 @@ async function runCheck() {
               penalty, check.id
             );
 
-            // Deduct penalty from user balance
+            // Deduct penalty from user balance and decrease karma
             await tx.run(
-              "UPDATE users SET balance = balance - ?, updated_at = NOW() WHERE id = ?",
+              "UPDATE users SET balance = balance - ?, karma = GREATEST(0, COALESCE(karma, 100) - 10), updated_at = NOW() WHERE id = ?",
               penalty, check.user_id
             );
 

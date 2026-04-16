@@ -93,6 +93,30 @@ export default function ProfilePage({ user }) {
         </div>
       </div>
 
+      {/* Karma */}
+      {(() => {
+        const karma = user?.karma ?? 100;
+        const karmaColor = karma >= 80 ? '#34c759' : karma >= 50 ? '#ff9500' : karma >= 20 ? '#ff6b00' : '#ff3b30';
+        const karmaLabel = karma >= 80 ? '🌟 Отличная' : karma >= 50 ? '⚡ Нормальная' : karma >= 20 ? '⚠️ Низкая' : '🚫 Критическая';
+        return (
+          <div className="mt-16 animate-slide" style={{ animationDelay: '120ms' }}>
+            <div className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 22 }}>☯️</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>Карма</div>
+                  <div style={{ fontSize: 11, color: karmaColor, fontWeight: 600 }}>{karmaLabel}</div>
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: 22, fontWeight: 800, color: karmaColor }}>{karma}</div>
+                <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>из 100</div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Penalties Section */}
       {penaltyData && (penaltyData.stats.penalty_count > 0 || penaltyData.stats.active_checks > 0) && (
         <div className="mt-16 animate-slide" style={{ animationDelay: '150ms' }}>

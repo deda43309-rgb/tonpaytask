@@ -185,6 +185,9 @@ async function initTables() {
     try { await db.exec(m); } catch(e) {}
   }
 
+  // Add karma column
+  try { await db.exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS karma INTEGER DEFAULT 100'); } catch(e) {}
+
   await db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
       id SERIAL PRIMARY KEY,
