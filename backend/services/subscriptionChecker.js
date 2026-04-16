@@ -4,24 +4,30 @@ const { getBot } = require('./bot');
 let checkInterval = null;
 
 /**
- * Start periodic subscription checker
- * Reads interval from settings (default 30 min)
+ * Subscription checker logic:
+ * 
+ * - `sub_check_hours` (default 72) = how many hours user MUST stay subscribed after completing task
+ * - `unsub_check_interval` (default 30 min) = how often auto-checks run
+ * 
+ * For each pending subscription check:
+ *   1. If obligation period expired (completed_at + sub_check_hours has passed) → mark as "passed"
+ *   2. If still within obligation period → verify subscription:
+ *      - If subscribed → do nothing, keep as pending (will be checked again next cycle)
+ *      - If NOT subscribed → penalize immediately
  */
+
 function startSubscriptionChecker() {
   console.log('🔍 Subscription checker started');
-  
-  // Run immediately on start, then schedule
-  setTimeout(() => scheduleNextCheck(), 10000); // initial delay 10s
+  setTimeout(() => scheduleNextCheck(), 10000);
 }
 
 async function scheduleNextCheck() {
   try {
-    await runCheck(false); // automatic — only overdue checks
+    await runCheck();
   } catch (e) {
     console.error('Subscription check error:', e);
   }
 
-  // Read interval from settings (default 30 min)
   let intervalMinutes = 30;
   try {
     const db = getDb();
@@ -45,75 +51,76 @@ function stopSubscriptionChecker() {
 }
 
 /**
- * Run check manually (for admin button)
- * forceAll = true — checks ALL pending records regardless of check_after time
+ * Run check manually (for admin button) — same logic, just triggered manually
  */
 async function runCheckNow() {
-  return await runCheck(true); // manual — check ALL pending
+  return await runCheck();
 }
 
-/**
- * @param {boolean} forceAll - if true, check all pending (manual mode). If false, only overdue (automatic mode).
- */
-async function runCheck(forceAll = false) {
+async function runCheck() {
   const bot = getBot();
   if (!bot) {
     console.log('🔍 Subscription check skipped — bot not initialized');
-    return { passed: 0, failed: 0 };
+    return { passed: 0, failed: 0, expired: 0 };
   }
 
   const db = getDb();
 
   try {
-    // Manual mode: check ALL pending records
-    // Automatic mode: only check records where check_after has passed
-    let query;
-    if (forceAll) {
-      query = `
-        SELECT * FROM subscription_checks 
-        WHERE status = 'pending'
-        ORDER BY check_after ASC
-        LIMIT 200
-      `;
-    } else {
-      query = `
-        SELECT * FROM subscription_checks 
-        WHERE status = 'pending' AND check_after <= NOW()
-        ORDER BY check_after ASC
-        LIMIT 100
-      `;
-    }
+    // Get ALL pending checks (no time filter — we check every cycle)
+    const pendingChecks = await db.all(`
+      SELECT * FROM subscription_checks 
+      WHERE status = 'pending'
+      ORDER BY created_at ASC
+      LIMIT 200
+    `);
 
-    const pendingChecks = await db.all(query);
+    console.log(`🔍 [SubCheck] Found ${pendingChecks.length} pending checks to process`);
 
-    console.log(`🔍 [SubCheck] Mode: ${forceAll ? 'MANUAL (all pending)' : 'AUTO (overdue only)'}. Found ${pendingChecks.length} checks to process.`);
+    if (pendingChecks.length === 0) return { passed: 0, failed: 0, expired: 0 };
 
-    if (pendingChecks.length === 0) return { passed: 0, failed: 0 };
-
-    // Get penalty setting
+    // Get settings
     const penaltyRow = await db.get("SELECT value FROM settings WHERE key = 'unsub_penalty'");
     const penalty = parseFloat(penaltyRow?.value) || 50;
 
-    let passed = 0;
-    let failed = 0;
+    const checkHoursRow = await db.get("SELECT value FROM settings WHERE key = 'sub_check_hours'");
+    const checkHours = parseFloat(checkHoursRow?.value) || 72;
+
+    let passed = 0; // still subscribed within obligation
+    let failed = 0; // unsubscribed within obligation → penalized
+    let expired = 0; // obligation period ended → free to unsubscribe
 
     for (const check of pendingChecks) {
       try {
-        console.log(`🔍 [SubCheck] Checking user ${check.user_id} in channel "${check.channel_id}" (task_type=${check.task_type}, task_id=${check.task_id})`);
-        
+        // Calculate if obligation period has expired
+        const completedAt = new Date(check.completed_at);
+        const obligationEnd = new Date(completedAt.getTime() + checkHours * 60 * 60 * 1000);
+        const now = new Date();
+
+        console.log(`🔍 [SubCheck] User ${check.user_id} | channel "${check.channel_id}" | completed: ${completedAt.toISOString()} | obligation ends: ${obligationEnd.toISOString()} | now: ${now.toISOString()}`);
+
+        if (now >= obligationEnd) {
+          // Obligation period expired — user fulfilled their requirement, mark as passed
+          await db.run(
+            "UPDATE subscription_checks SET status = 'passed', checked_at = NOW() WHERE id = ?",
+            check.id
+          );
+          console.log(`✅ [SubCheck] User ${check.user_id} — obligation expired, marked as PASSED`);
+          expired++;
+          continue;
+        }
+
+        // Still within obligation period — check if user is subscribed
         const isSubscribed = await verifySubscription(bot, check.channel_id, check.user_id);
 
         console.log(`🔍 [SubCheck] User ${check.user_id} in "${check.channel_id}" => ${isSubscribed ? 'SUBSCRIBED ✅' : 'NOT SUBSCRIBED ❌'}`);
 
         if (isSubscribed) {
-          // User is still subscribed — mark as passed
-          await db.run(
-            "UPDATE subscription_checks SET status = 'passed', checked_at = NOW() WHERE id = ?",
-            check.id
-          );
+          // User is still subscribed — keep as pending, will be checked again next cycle
           passed++;
+          console.log(`✅ [SubCheck] User ${check.user_id} — still subscribed, keeping pending`);
         } else {
-          // User unsubscribed — apply penalty
+          // User unsubscribed within obligation period — PENALIZE
           await db.transaction(async (tx) => {
             // Mark check as penalized
             await tx.run(
@@ -129,7 +136,6 @@ async function runCheck(forceAll = false) {
 
             // Return penalty to task creator as compensation
             if (check.task_type === 'ad') {
-              // Ad task — return to advertiser's ad_balance
               const adTask = await tx.get('SELECT advertiser_id FROM ad_tasks WHERE id = ?', check.task_id);
               if (adTask) {
                 await tx.run(
@@ -138,7 +144,6 @@ async function runCheck(forceAll = false) {
                 );
               }
             } else {
-              // Admin task — return to system balance
               await tx.run(
                 "UPDATE settings SET value = CAST(CAST(value AS NUMERIC) + ? AS TEXT) WHERE key = 'admin_balance'",
                 penalty
@@ -153,10 +158,12 @@ async function runCheck(forceAll = false) {
               : await db.get('SELECT title FROM ad_tasks WHERE id = ?', check.task_id);
 
             const taskTitle = taskInfo?.title || `#${check.task_id}`;
+            const hoursLeft = Math.ceil((obligationEnd - now) / (1000 * 60 * 60));
 
             bot.sendMessage(check.user_id,
               `⚠️ *Штраф за отписку!*\n\n` +
               `Вы отписались от канала после выполнения задания "${taskTitle}".\n` +
+              `Вы должны были оставаться подписаны ещё ${hoursLeft} ч.\n` +
               `С вашего баланса списано: *-${penalty} TON*\n\n` +
               `Пожалуйста, не отписывайтесь от каналов после выполнения заданий.`,
               { parse_mode: 'Markdown' }
@@ -170,19 +177,16 @@ async function runCheck(forceAll = false) {
         }
       } catch (checkErr) {
         console.error(`Subscription check error for id=${check.id}, channel="${check.channel_id}", user=${check.user_id}:`, checkErr.message);
-        // If we can't check (channel might be deleted etc), mark as passed
-        await db.run(
-          "UPDATE subscription_checks SET status = 'passed', checked_at = NOW() WHERE id = ?",
-          check.id
-        );
+        // If we can't check (bot not admin in channel, channel deleted etc), skip for now
+        // Don't mark as passed — try again next cycle
       }
     }
 
-    console.log(`🔍 [SubCheck] Done: ${passed} passed, ${failed} penalized`);
-    return { passed, failed };
+    console.log(`🔍 [SubCheck] Done: ${passed} still subscribed, ${failed} penalized, ${expired} obligation expired`);
+    return { passed, failed, expired };
   } catch (error) {
     console.error('Subscription checker error:', error);
-    return { passed: 0, failed: 0 };
+    return { passed: 0, failed: 0, expired: 0 };
   }
 }
 
@@ -198,8 +202,6 @@ async function verifySubscription(bot, channelId, userId) {
     return validStatuses.includes(chatMember.status);
   } catch (error) {
     console.log(`🔍 [SubCheck] getChatMember error: ${error.message}`);
-    // "left" or "kicked" status means user is not subscribed
-    // "user not found" or "CHAT_ADMIN_REQUIRED" also means not subscribed
     if (error.message && (
       error.message.includes('user not found') || 
       error.message.includes('CHAT_ADMIN_REQUIRED') ||
@@ -208,7 +210,7 @@ async function verifySubscription(bot, channelId, userId) {
     )) {
       return false;
     }
-    throw error; // rethrow unexpected errors
+    throw error;
   }
 }
 

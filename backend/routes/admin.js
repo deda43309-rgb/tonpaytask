@@ -26,6 +26,21 @@ router.get('/stats', async (req, res) => {
     const todayUsers = await db.get("SELECT COUNT(*) as count FROM users WHERE created_at >= ?", today);
     const todayCompletions = await db.get("SELECT COUNT(*) as count FROM task_completions WHERE completed_at >= ?", today);
 
+    // Penalty stats
+    const penaltyStats = await db.get(`
+      SELECT 
+        COUNT(*) as total_penalties,
+        COALESCE(SUM(penalty_applied), 0) as total_penalty_amount
+      FROM subscription_checks 
+      WHERE status = 'penalized'
+    `);
+    const pendingChecks = await db.get("SELECT COUNT(*) as count FROM subscription_checks WHERE status = 'pending'");
+    const todayPenalties = await db.get(`
+      SELECT COUNT(*) as count, COALESCE(SUM(penalty_applied), 0) as amount
+      FROM subscription_checks 
+      WHERE status = 'penalized' AND checked_at >= ?
+    `, today);
+
     res.json({
       users: parseInt(userCount.count),
       active_tasks: parseInt(taskCount.count),
@@ -33,6 +48,13 @@ router.get('/stats', async (req, res) => {
       total_paid: parseFloat(totalPaid.total),
       today_users: parseInt(todayUsers.count),
       today_completions: parseInt(todayCompletions.count),
+      penalties: {
+        total_count: parseInt(penaltyStats.total_penalties),
+        total_amount: parseFloat(penaltyStats.total_penalty_amount),
+        pending_checks: parseInt(pendingChecks.count),
+        today_count: parseInt(todayPenalties.count),
+        today_amount: parseFloat(todayPenalties.amount),
+      },
     });
   } catch (error) {
     console.error('Admin stats error:', error);
@@ -302,7 +324,7 @@ router.post('/check-subscriptions', async (req, res) => {
     const result = await runCheckNow();
     res.json({ 
       success: true, 
-      message: `Проверено: ${result.passed} ок, ${result.failed} штрафов`,
+      message: `Проверено: ${result.passed} ок, ${result.failed} штрафов, ${result.expired || 0} истекло`,
       pending_before: parseInt(beforeCount.count),
       ...result 
     });

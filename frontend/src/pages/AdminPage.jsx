@@ -258,6 +258,35 @@ export default function AdminPage({ user }) {
                   </div>
                 </div>
               </div>
+
+              {/* Penalty Stats */}
+              {stats.penalties && (
+                <div className="card mt-16" style={{ border: '1px solid rgba(255, 59, 48, 0.15)' }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>⚠️ Штрафы</h3>
+                  <div className="admin-stats-grid">
+                    <div className="card admin-stat-card" style={{ background: 'rgba(255, 59, 48, 0.06)' }}>
+                      <span className="admin-stat-icon">🚫</span>
+                      <span className="admin-stat-value" style={{ color: '#ff3b30' }}>{stats.penalties.total_count}</span>
+                      <span className="admin-stat-label">Всего штрафов</span>
+                    </div>
+                    <div className="card admin-stat-card" style={{ background: 'rgba(255, 59, 48, 0.06)' }}>
+                      <span className="admin-stat-icon">💸</span>
+                      <span className="admin-stat-value" style={{ color: '#ff3b30' }}>{formatTON(stats.penalties.total_amount)}</span>
+                      <span className="admin-stat-label">Списано TON</span>
+                    </div>
+                    <div className="card admin-stat-card" style={{ background: 'rgba(255, 149, 0, 0.06)' }}>
+                      <span className="admin-stat-icon">⏳</span>
+                      <span className="admin-stat-value" style={{ color: '#ff9500' }}>{stats.penalties.pending_checks}</span>
+                      <span className="admin-stat-label">На проверке</span>
+                    </div>
+                    <div className="card admin-stat-card" style={{ background: 'rgba(255, 59, 48, 0.06)' }}>
+                      <span className="admin-stat-icon">📅</span>
+                      <span className="admin-stat-value" style={{ color: '#ff3b30' }}>{stats.penalties.today_count}</span>
+                      <span className="admin-stat-label">Штрафов сегодня</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -602,7 +631,7 @@ export default function AdminPage({ user }) {
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🔍 Проверка подписок</h3>
                 
                 <div className="form-group">
-                  <label className="form-label">⏰ Проверка подписки через (часов)</label>
+                  <label className="form-label">⏰ Обязательная подписка (часов)</label>
                   <input
                     className="input"
                     type="number"
@@ -612,7 +641,7 @@ export default function AdminPage({ user }) {
                     onChange={e => setSettings(s => ({ ...s, sub_check_hours: e.target.value }))}
                   />
                   <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    После выполнения задания «Подписаться» система проверит подписку через указанное время
+                    Юзер должен оставаться подписан указанное время. После этого срока может отписаться без штрафа.
                   </div>
                 </div>
 
