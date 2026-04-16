@@ -720,6 +720,79 @@ export default function AdminPage({ user }) {
                 </div>
               </div>
 
+              <div className="card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>☯️ Модификаторы кармы (%)</h3>
+                
+                <div className="form-group">
+                  <label className="form-label">🌟 Бонус за высокую карму (80-100)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={settings.karma_bonus_high ?? '5'}
+                    onChange={e => setSettings(s => ({ ...s, karma_bonus_high: e.target.value }))}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    +{settings.karma_bonus_high || 5}% к награде из системного баланса
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">⚠️ Штраф за низкую карму (20-49)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={settings.karma_penalty_low ?? '10'}
+                    onChange={e => setSettings(s => ({ ...s, karma_penalty_low: e.target.value }))}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    -{settings.karma_penalty_low || 10}% от награды в системный баланс
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">🚫 Штраф за критическую карму (0-19)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={settings.karma_penalty_critical ?? '15'}
+                    onChange={e => setSettings(s => ({ ...s, karma_penalty_critical: e.target.value }))}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    -{settings.karma_penalty_critical || 15}% от награды в системный баланс
+                  </div>
+                </div>
+
+                <button
+                  className="btn btn-primary btn-block"
+                  disabled={savingSettings}
+                  onClick={async () => {
+                    setSavingSettings(true);
+                    try {
+                      const res = await api.updateAdminSettings({
+                        karma_bonus_high: settings.karma_bonus_high,
+                        karma_penalty_low: settings.karma_penalty_low,
+                        karma_penalty_critical: settings.karma_penalty_critical,
+                      });
+                      setSettings(res.settings);
+                      showToastMsg('Настройки кармы сохранены ✅');
+                      hapticFeedback('success');
+                    } catch (err) {
+                      showToastMsg(err.message, 'error');
+                    } finally {
+                      setSavingSettings(false);
+                    }
+                  }}
+                >
+                  {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
+                </button>
+              </div>
+
               <div className="card" style={{ padding: 20, border: '1px solid rgba(239,68,68,0.3)' }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, color: '#ef4444' }}>⚠️ Опасная зона</h3>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>

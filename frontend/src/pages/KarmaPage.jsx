@@ -5,10 +5,10 @@ import { formatTON } from '../utils/format';
 import * as api from '../utils/api';
 
 const levels = [
-  { min: 80, max: 100, label: '🌟 Отличная', color: '#34c759', desc: '+5% к награде за задания', modifier: '+5%' },
-  { min: 50, max: 79, label: '⚡ Нормальная', color: '#ff9500', desc: 'Стандартная награда без изменений', modifier: '0%' },
-  { min: 20, max: 49, label: '⚠️ Низкая', color: '#ff6b00', desc: '-10% от награды за задания', modifier: '-10%' },
-  { min: 0, max: 19, label: '🚫 Критическая', color: '#ff3b30', desc: '-15% от награды за задания', modifier: '-15%' },
+  { min: 80, max: 100, label: '🌟 Отличная', color: '#34c759', desc: 'Бонус к награде за задания' },
+  { min: 50, max: 79, label: '⚡ Нормальная', color: '#ff9500', desc: 'Стандартная награда без изменений' },
+  { min: 20, max: 49, label: '⚠️ Низкая', color: '#ff6b00', desc: 'Штраф от награды за задания' },
+  { min: 0, max: 19, label: '🚫 Критическая', color: '#ff3b30', desc: 'Максимальный штраф от награды' },
 ];
 
 export default function KarmaPage({ user }) {
@@ -33,14 +33,17 @@ export default function KarmaPage({ user }) {
 
   const penaltyAmount = settings?.unsub_penalty || 50;
   const checkHours = settings?.sub_check_hours || 72;
+  const bonusHigh = settings?.karma_bonus_high || 5;
+  const penaltyLow = settings?.karma_penalty_low || 10;
+  const penaltyCritical = settings?.karma_penalty_critical || 15;
 
   const rules = [
     { icon: '🎯', title: 'Начальная карма', desc: 'При регистрации каждый пользователь получает 50 очков кармы из 100 возможных.' },
     { icon: '📉', title: 'Штраф за отписку', desc: `Отписка от канала в течение ${checkHours}ч снимает 10 кармы и ${formatTON(penaltyAmount)} TON с баланса.`, color: '#ff3b30' },
     { icon: '📈', title: 'Награда за задания', desc: `За каждые 10 выполненных заданий вы получаете +1 к карме (макс. 100).`, color: '#34c759' },
-    { icon: '🎁', title: 'Бонус за высокую карму', desc: 'При карме от 80 до 100 вы получаете +5% к награде за каждое задание из системного баланса.', color: '#34c759' },
-    { icon: '💸', title: 'Штраф за низкую карму', desc: 'При карме от 20 до 49 вы теряете 10% от награды за каждое задание.', color: '#ff6b00' },
-    { icon: '🔻', title: 'Штраф за критическую карму', desc: 'При карме от 0 до 19 вы теряете 15% от награды за каждое задание.', color: '#ff3b30' },
+    { icon: '🎁', title: 'Бонус за высокую карму', desc: `При карме от 80 до 100 вы получаете +${bonusHigh}% к награде за каждое задание из системного баланса.`, color: '#34c759' },
+    { icon: '💸', title: 'Штраф за низкую карму', desc: `При карме от 20 до 49 вы теряете ${penaltyLow}% от награды за каждое задание.`, color: '#ff6b00' },
+    { icon: '🔻', title: 'Штраф за критическую карму', desc: `При карме от 0 до 19 вы теряете ${penaltyCritical}% от награды за каждое задание.`, color: '#ff3b30' },
     { icon: '🔒', title: 'Обязательная подписка', desc: `После выполнения задания на подписку вы обязаны оставаться подписанным ${checkHours} часов.` },
     { icon: '🚫', title: 'Блокировка', desc: 'При карме = 0 или отрицательном балансе аккаунт блокируется автоматически.', color: '#ff3b30' },
     { icon: '🔓', title: 'Разблокировка', desc: 'Для разблокировки обратитесь к администратору.' },
@@ -149,6 +152,7 @@ export default function KarmaPage({ user }) {
       <div className="animate-slide" style={{ animationDelay: '240ms' }}>
         {levels.map((level, i) => {
           const isActive = karma >= level.min && karma <= level.max;
+          const mod = level.min >= 80 ? `+${bonusHigh}%` : level.min >= 50 ? '0%' : level.min >= 20 ? `-${penaltyLow}%` : `-${penaltyCritical}%`;
           return (
           <div key={i} className="card" style={{
             padding: '10px 14px', marginBottom: 8,
@@ -163,9 +167,9 @@ export default function KarmaPage({ user }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginLeft: 8 }}>
               <span style={{
                 fontSize: 11, fontWeight: 800, color: '#fff', padding: '2px 6px', borderRadius: 6,
-                background: level.modifier.startsWith('+') ? '#34c759' : level.modifier === '0%' ? '#8e8e93' : '#ff3b30',
+                background: mod.startsWith('+') ? '#34c759' : mod === '0%' ? '#8e8e93' : '#ff3b30',
               }}>
-                {level.modifier}
+                {mod}
               </span>
               <span style={{ fontSize: 12, fontWeight: 700, color: level.color, whiteSpace: 'nowrap' }}>
                 {level.min}–{level.max}

@@ -129,13 +129,16 @@ router.post('/:id/complete', async (req, res) => {
       // Add completion
       await tx.run('INSERT INTO task_completions (user_id, task_id) VALUES (?, ?)', userId, taskId);
 
-      // Karma reward modifier: high karma (80-100) = +5% bonus, low karma (20-49) = -10% penalty
+      // Karma reward modifier from settings
       const userKarma = await tx.get('SELECT karma FROM users WHERE id = ?', userId);
       const karma = userKarma?.karma ?? 50;
+      const karmaSettings = await tx.all("SELECT key, value FROM settings WHERE key IN ('karma_bonus_high','karma_penalty_low','karma_penalty_critical')");
+      const ks = {};
+      karmaSettings.forEach(r => { ks[r.key] = parseFloat(r.value) || 0; });
       let karmaModifier = 0;
-      if (karma >= 80) karmaModifier = 0.05;       // +5% bonus
-      else if (karma >= 20 && karma < 50) karmaModifier = -0.10; // -10% penalty
-      else if (karma < 20) karmaModifier = -0.15;  // -15% critical penalty
+      if (karma >= 80) karmaModifier = (ks.karma_bonus_high || 5) / 100;
+      else if (karma >= 20 && karma < 50) karmaModifier = -(ks.karma_penalty_low || 10) / 100;
+      else if (karma < 20) karmaModifier = -(ks.karma_penalty_critical || 15) / 100;
       const karmaAdjust = Math.round(task.reward * Math.abs(karmaModifier) * 100) / 100;
       const actualReward = karmaModifier >= 0 
         ? task.reward + karmaAdjust 
@@ -258,13 +261,16 @@ router.post('/:id/complete-ad', async (req, res) => {
       // Add completion
       await tx.run('INSERT INTO ad_task_completions (task_id, user_id) VALUES (?, ?)', taskId, userId);
 
-      // Karma reward modifier: high karma (80-100) = +5% bonus, low karma (20-49) = -10% penalty
+      // Karma reward modifier from settings
       const userKarmaRow = await tx.get('SELECT karma FROM users WHERE id = ?', userId);
       const karma = userKarmaRow?.karma ?? 50;
+      const karmaSettings = await tx.all("SELECT key, value FROM settings WHERE key IN ('karma_bonus_high','karma_penalty_low','karma_penalty_critical')");
+      const ks = {};
+      karmaSettings.forEach(r => { ks[r.key] = parseFloat(r.value) || 0; });
       let karmaModifier = 0;
-      if (karma >= 80) karmaModifier = 0.05;       // +5% bonus
-      else if (karma >= 20 && karma < 50) karmaModifier = -0.10; // -10% penalty
-      else if (karma < 20) karmaModifier = -0.15;  // -15% critical penalty
+      if (karma >= 80) karmaModifier = (ks.karma_bonus_high || 5) / 100;
+      else if (karma >= 20 && karma < 50) karmaModifier = -(ks.karma_penalty_low || 10) / 100;
+      else if (karma < 20) karmaModifier = -(ks.karma_penalty_critical || 15) / 100;
       const karmaAdjust = Math.round(userReward * Math.abs(karmaModifier) * 100) / 100;
       const actualUserReward = karmaModifier >= 0
         ? userReward + karmaAdjust

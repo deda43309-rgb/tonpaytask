@@ -346,6 +346,9 @@ async function initTables() {
     ['unsub_penalty', '50'],
     ['referral_bonus', '100'],
     ['daily_bonus', '50'],
+    ['karma_bonus_high', '5'],
+    ['karma_penalty_low', '10'],
+    ['karma_penalty_critical', '15'],
   ];
   for (const [key, value] of defaults) {
     try {
