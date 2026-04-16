@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { formatTON } from '../utils/format';
 import './TopBar.css';
 
 export default function TopBar({ user }) {
+  const navigate = useNavigate();
   if (!user) return null;
 
   const karma = user.karma ?? 50;
@@ -14,7 +16,7 @@ export default function TopBar({ user }) {
         <span className="topbar-name">TonPayTask</span>
       </div>
       <div className="topbar-right">
-        <div className="topbar-item">
+        <div className="topbar-item" onClick={() => navigate('/karma')} style={{ cursor: 'pointer' }}>
           <span className="topbar-item-icon">☯️</span>
           <span className="topbar-item-value" style={{ color: karmaColor }}>{karma}</span>
         </div>
