@@ -11,7 +11,7 @@ const TYPE_ICONS = {
   visit_link: '🔗',
 };
 
-function Countdown({ endDate }) {
+function Countdown({ endDate, channelUrl }) {
   const [timeLeft, setTimeLeft] = useState('');
   const [expired, setExpired] = useState(false);
 
@@ -36,9 +36,26 @@ function Countdown({ endDate }) {
 
   if (expired) {
     return (
-      <span style={{ fontSize: 10, color: '#34c759', fontWeight: 600 }}>
-        ✅ Можно отписаться
-      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 10, color: '#34c759', fontWeight: 600 }}>
+          ✅ Можно отписаться
+        </span>
+        {channelUrl && (
+          <button
+            onClick={() => {
+              hapticFeedback('light');
+              window.open(channelUrl, '_blank');
+            }}
+            style={{
+              padding: '4px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              fontSize: 11, fontWeight: 700, background: 'rgba(255,59,48,0.12)',
+              color: '#ff3b30', transition: 'all 0.2s',
+            }}
+          >
+            🔕 Отписаться
+          </button>
+        )}
+      </div>
     );
   }
 
@@ -183,7 +200,7 @@ export default function CompletionsPage() {
                     {/* Subscription countdown */}
                     {c.type === 'subscribe_channel' && c.obligation_end && c.sub_status !== 'penalized' && (
                       <div style={{ marginTop: 6, marginLeft: 48 }}>
-                        <Countdown endDate={c.obligation_end} />
+                        <Countdown endDate={c.obligation_end} channelUrl={c.target_url} />
                       </div>
                     )}
                     {c.type === 'subscribe_channel' && c.sub_status === 'penalized' && (

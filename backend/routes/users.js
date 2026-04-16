@@ -177,7 +177,7 @@ router.get('/completions', async (req, res) => {
     const checkHours = parseFloat(checkHoursRow?.value) || 72;
 
     const adminCompletions = await db.all(`
-      SELECT tc.id, tc.completed_at, t.title, t.reward, t.type, t.icon, t.image_url, 'admin' as source,
+      SELECT tc.id, tc.completed_at, t.title, t.reward, t.type, t.icon, t.image_url, t.target_url, 'admin' as source,
         t.id as task_id,
         sc.status as sub_status
       FROM task_completions tc
@@ -188,7 +188,7 @@ router.get('/completions', async (req, res) => {
     `, userId);
 
     const adCompletions = await db.all(`
-      SELECT atc.id, atc.completed_at, at2.title, at2.reward, at2.type, at2.image_url, 'ad' as source,
+      SELECT atc.id, atc.completed_at, at2.title, at2.reward, at2.type, at2.image_url, at2.url as target_url, 'ad' as source,
         at2.id as task_id,
         sc.status as sub_status
       FROM ad_task_completions atc
