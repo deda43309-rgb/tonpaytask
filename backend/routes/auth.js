@@ -23,8 +23,8 @@ router.post('/login', async (req, res) => {
       // Create new user
       const refCode = generateReferralCode();
       await db.run(
-        `INSERT INTO users (id, username, first_name, last_name, photo_url, referral_code)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users (id, username, first_name, last_name, photo_url, referral_code, karma)
+         VALUES (?, ?, ?, ?, ?, ?, 50)`,
         user.id,
         user.username || '',
         user.first_name || '',
