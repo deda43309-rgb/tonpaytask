@@ -170,23 +170,40 @@ router.get('/completions', async (req, res) => {
     const db = getDb();
     const userId = req.telegramUser.id;
 
+    // Get sub_check_hours setting
+    const checkHoursRow = await db.get("SELECT value FROM settings WHERE key = 'sub_check_hours'");
+    const checkHours = parseFloat(checkHoursRow?.value) || 72;
+
     const adminCompletions = await db.all(`
-      SELECT tc.id, tc.completed_at, t.title, t.reward, t.type, t.icon, t.image_url, 'admin' as source
+      SELECT tc.id, tc.completed_at, t.title, t.reward, t.type, t.icon, t.image_url, 'admin' as source,
+        t.id as task_id,
+        sc.status as sub_status
       FROM task_completions tc
       JOIN tasks t ON t.id = tc.task_id
+      LEFT JOIN subscription_checks sc ON sc.user_id = tc.user_id AND sc.task_id = t.id AND sc.task_type = 'admin'
       WHERE tc.user_id = ?
       ORDER BY tc.completed_at DESC
     `, userId);
 
     const adCompletions = await db.all(`
-      SELECT atc.id, atc.completed_at, at2.title, at2.reward, at2.type, at2.image_url, 'ad' as source
+      SELECT atc.id, atc.completed_at, at2.title, at2.reward, at2.type, at2.image_url, 'ad' as source,
+        at2.id as task_id,
+        sc.status as sub_status
       FROM ad_task_completions atc
       JOIN ad_tasks at2 ON at2.id = atc.task_id
+      LEFT JOIN subscription_checks sc ON sc.user_id = atc.user_id AND sc.task_id = at2.id AND sc.task_type = 'ad'
       WHERE atc.user_id = ?
       ORDER BY atc.completed_at DESC
     `, userId);
 
     const all = [...adminCompletions, ...adCompletions]
+      .map(c => ({
+        ...c,
+        obligation_hours: c.type === 'subscribe_channel' ? checkHours : null,
+        obligation_end: c.type === 'subscribe_channel'
+          ? new Date(new Date(c.completed_at).getTime() + checkHours * 60 * 60 * 1000).toISOString()
+          : null,
+      }))
       .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
 
     const totalReward = all.reduce((sum, c) => sum + parseFloat(c.reward || 0), 0);

@@ -11,11 +11,49 @@ const TYPE_ICONS = {
   visit_link: '🔗',
 };
 
+function Countdown({ endDate }) {
+  const [timeLeft, setTimeLeft] = useState('');
+  const [expired, setExpired] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      const now = new Date();
+      const end = new Date(endDate);
+      const diff = end - now;
+      if (diff <= 0) {
+        setExpired(true);
+        setTimeLeft('');
+        return;
+      }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setTimeLeft(`${h}ч ${m}м`);
+    };
+    update();
+    const t = setInterval(update, 60000);
+    return () => clearInterval(t);
+  }, [endDate]);
+
+  if (expired) {
+    return (
+      <span style={{ fontSize: 10, color: '#34c759', fontWeight: 600 }}>
+        ✅ Можно отписаться
+      </span>
+    );
+  }
+
+  return (
+    <span style={{ fontSize: 10, color: '#ff9500', fontWeight: 600 }}>
+      🔒 Не отписывайтесь: {timeLeft}
+    </span>
+  );
+}
+
 export default function CompletionsPage() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, admin, ad
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     api.getCompletions()
@@ -33,7 +71,6 @@ export default function CompletionsPage() {
     ? completions
     : completions.filter(c => c.source === filter);
 
-  // Group by date
   const grouped = {};
   filtered.forEach(c => {
     const date = new Date(c.completed_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -57,7 +94,6 @@ export default function CompletionsPage() {
         <h1 className="section-title">📋 Мои задания</h1>
       </div>
 
-      {/* Stats summary */}
       <div className="card animate-slide" style={{ padding: 16 }}>
         <div style={{ display: 'flex', gap: 12, textAlign: 'center' }}>
           <div style={{ flex: 1, padding: '8px 0', borderRadius: 10, background: 'var(--bg-glass)' }}>
@@ -71,7 +107,6 @@ export default function CompletionsPage() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="mt-16 animate-slide" style={{ display: 'flex', gap: 8, animationDelay: '80ms' }}>
         {[
           { key: 'all', label: `Все (${completions.length})` },
@@ -93,7 +128,6 @@ export default function CompletionsPage() {
         ))}
       </div>
 
-      {/* Task list grouped by date */}
       <div className="mt-16 animate-slide" style={{ animationDelay: '160ms' }}>
         {filtered.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: 40 }}>
@@ -111,39 +145,54 @@ export default function CompletionsPage() {
                   <div
                     key={`${c.source}-${c.id}`}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
                       padding: '12px 16px',
                       borderBottom: i < items.length - 1 ? '1px solid var(--border)' : 'none',
                     }}
                   >
-                    {c.image_url ? (
-                      <img
-                        src={c.image_url}
-                        alt=""
-                        style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'var(--bg-glass)', fontSize: 18,
-                      }}>
-                        {c.icon || TYPE_ICONS[c.type] || '📋'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {c.image_url ? (
+                        <img
+                          src={c.image_url}
+                          alt=""
+                          style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'var(--bg-glass)', fontSize: 18,
+                        }}>
+                          {c.icon || TYPE_ICONS[c.type] || '📋'}
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.title}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                          {c.source === 'ad' ? '📢 Рекламное' : '⚙️ Системное'}
+                          {' · '}
+                          {new Date(c.completed_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#34c759', flexShrink: 0 }}>
+                        +{formatTON(c.reward)}
+                      </div>
+                    </div>
+
+                    {/* Subscription countdown */}
+                    {c.type === 'subscribe_channel' && c.obligation_end && c.sub_status !== 'penalized' && (
+                      <div style={{ marginTop: 6, marginLeft: 48 }}>
+                        <Countdown endDate={c.obligation_end} />
                       </div>
                     )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {c.title}
+                    {c.type === 'subscribe_channel' && c.sub_status === 'penalized' && (
+                      <div style={{ marginTop: 6, marginLeft: 48 }}>
+                        <span style={{ fontSize: 10, color: '#ff3b30', fontWeight: 600 }}>
+                          🚫 Штраф за отписку
+                        </span>
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        {c.source === 'ad' ? '📢 Рекламное' : '⚙️ Системное'}
-                        {' · '}
-                        {new Date(c.completed_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#34c759', flexShrink: 0 }}>
-                      +{formatTON(c.reward)}
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
