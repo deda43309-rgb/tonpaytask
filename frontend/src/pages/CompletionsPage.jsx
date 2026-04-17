@@ -16,6 +16,7 @@ function Countdown({ endDate, channelUrl, channelId }) {
   const [expired, setExpired] = useState(false);
   const [unsubscribed, setUnsubscribed] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [initialChecked, setInitialChecked] = useState(false);
 
   useEffect(() => {
     const update = () => {
@@ -36,11 +37,25 @@ function Countdown({ endDate, channelUrl, channelId }) {
     return () => clearInterval(t);
   }, [endDate]);
 
+  // Auto-check when expired
+  useEffect(() => {
+    if (expired && channelId && !initialChecked) {
+      setInitialChecked(true);
+      setChecking(true);
+      api.checkUnsubscribed(channelId)
+        .then(result => {
+          if (!result.subscribed) {
+            setUnsubscribed(true);
+          }
+        })
+        .catch(e => console.error('Auto check error:', e))
+        .finally(() => setChecking(false));
+    }
+  }, [expired, channelId, initialChecked]);
+
   const handleUnsubscribe = async () => {
     hapticFeedback('light');
-    // Open channel first
     if (channelUrl) window.open(channelUrl, '_blank');
-    // After a delay, check if actually unsubscribed
     setChecking(true);
     setTimeout(async () => {
       try {
@@ -48,6 +63,8 @@ function Countdown({ endDate, channelUrl, channelId }) {
         if (!result.subscribed) {
           setUnsubscribed(true);
           hapticFeedback('success');
+        } else {
+          hapticFeedback('error');
         }
       } catch (e) {
         console.error('Check unsub error:', e);
@@ -58,6 +75,13 @@ function Countdown({ endDate, channelUrl, channelId }) {
   };
 
   if (expired) {
+    if (checking && !unsubscribed) {
+      return (
+        <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>
+          ⏳ Проверка подписки...
+        </span>
+      );
+    }
     if (unsubscribed) {
       return (
         <span style={{ fontSize: 10, color: '#34c759', fontWeight: 600 }}>
