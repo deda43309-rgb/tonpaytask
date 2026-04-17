@@ -423,15 +423,28 @@ export default function AdminPage({ user }) {
                 }}>
                   {/* Header */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 14, flexShrink: 0,
-                      background: avatarGrad,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 18, fontWeight: 800, color: '#fff',
-                      boxShadow: `0 4px 12px ${karmaColor}33`,
-                    }}>
-                      {(u.first_name || u.username || '?')[0].toUpperCase()}
-                    </div>
+                    {u.photo_url ? (
+                      <img
+                        src={u.photo_url}
+                        alt=""
+                        style={{
+                          width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+                          objectFit: 'cover',
+                          border: `2px solid ${karmaColor}40`,
+                          boxShadow: `0 4px 12px ${karmaColor}22`,
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+                        background: avatarGrad,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 18, fontWeight: 800, color: '#fff',
+                        boxShadow: `0 4px 12px ${karmaColor}33`,
+                      }}>
+                        {(u.first_name || u.username || '?')[0].toUpperCase()}
+                      </div>
+                    )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -442,6 +455,10 @@ export default function AdminPage({ user }) {
                       {u.username && (
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>@{u.username}</div>
                       )}
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3, display: 'flex', gap: 8 }}>
+                        <span>📅 {new Date(u.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                        <span>🕐 {new Date(u.updated_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })} {new Date(u.updated_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
                     </div>
                     <div style={{
                       padding: '4px 10px', borderRadius: 8,
