@@ -152,7 +152,7 @@ router.post('/:id/complete', async (req, res) => {
       if (karma >= 80) karmaModifier = (ks.karma_bonus_high || 5) / 100;
       else if (karma >= 20 && karma < 50) karmaModifier = -(ks.karma_penalty_low || 10) / 100;
       else if (karma < 20) karmaModifier = -(ks.karma_penalty_critical || 15) / 100;
-      const karmaAdjust = Math.round(userReward * Math.abs(karmaModifier) * 100) / 100;
+      const karmaAdjust = Math.round(userReward * Math.abs(karmaModifier) * 1000000) / 1000000;
       const actualUserReward = karmaModifier >= 0
         ? userReward + karmaAdjust
         : userReward - karmaAdjust;
@@ -311,7 +311,7 @@ router.post('/:id/complete-ad', async (req, res) => {
       if (karma >= 80) karmaModifier = (ks.karma_bonus_high || 5) / 100;
       else if (karma >= 20 && karma < 50) karmaModifier = -(ks.karma_penalty_low || 10) / 100;
       else if (karma < 20) karmaModifier = -(ks.karma_penalty_critical || 15) / 100;
-      const karmaAdjust = Math.round(userReward * Math.abs(karmaModifier) * 100) / 100;
+      const karmaAdjust = Math.round(userReward * Math.abs(karmaModifier) * 1000000) / 1000000;
       const actualUserReward = karmaModifier >= 0
         ? userReward + karmaAdjust
         : userReward - karmaAdjust;
