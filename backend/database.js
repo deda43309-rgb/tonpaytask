@@ -187,6 +187,8 @@ async function initTables() {
 
   // Add karma column
   try { await db.exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS karma INTEGER DEFAULT 50'); } catch(e) {}
+  // Ensure karma DEFAULT is 50 (fix for existing columns with wrong default)
+  try { await db.exec('ALTER TABLE users ALTER COLUMN karma SET DEFAULT 50'); } catch(e) {}
   // Add is_blocked column
   try { await db.exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked INTEGER DEFAULT 0'); } catch(e) {}
 
