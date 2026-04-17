@@ -21,7 +21,7 @@ export default function BottomNav() {
   };
 
   // Don't show on sub-pages without bottom nav relevance
-  const hiddenPaths = ['/admin', '/advertiser', '/completions'];
+  const hiddenPaths = ['/admin', '/advertiser'];
   if (hiddenPaths.some(p => location.pathname.startsWith(p))) return null;
 
   return (
