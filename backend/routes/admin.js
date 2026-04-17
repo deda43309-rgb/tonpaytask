@@ -98,19 +98,16 @@ router.post('/tasks', async (req, res) => {
       return res.status(400).json({ error: `Invalid type. Must be: ${validTypes.join(', ')}` });
     }
 
-    const taskReward = parseFloat(reward) || 0;
-    const totalCost = taskReward * parseInt(max_completions);
+    // Get ad_price from settings for cost calculation
+    const priceRow = await db.get("SELECT value FROM settings WHERE key = 'ad_price'");
+    const adPrice = parseFloat(priceRow?.value) || 0.002;
+    const totalCost = adPrice * parseInt(max_completions);
 
-    // Check system balance
-    const balRow = await db.get("SELECT value FROM settings WHERE key = 'admin_balance'");
-    const systemBalance = parseFloat(balRow?.value) || 0;
-
-    if (totalCost > systemBalance) {
-      return res.status(400).json({ error: `Недостаточно баланса системы. Нужно: ${totalCost}, доступно: ${systemBalance}` });
-    }
-
-    // Deduct from system balance
-    await db.run("UPDATE settings SET value = ? WHERE key = 'admin_balance'", String(systemBalance - totalCost));
+    // Deduct from system balance (allow negative)
+    await db.run(
+      "UPDATE settings SET value = CAST(CAST(value AS NUMERIC) - ? AS TEXT) WHERE key = 'admin_balance'",
+      totalCost
+    );
 
     const result = await db.get(`
       INSERT INTO tasks (type, title, description, reward, target_url, target_id, icon, sort_order, max_completions, image_url)
@@ -120,7 +117,7 @@ router.post('/tasks', async (req, res) => {
       type,
       title,
       description || '',
-      taskReward,
+      adPrice,
       target_url,
       target_id || '',
       icon || '📋',
@@ -129,7 +126,8 @@ router.post('/tasks', async (req, res) => {
       image_url || null
     );
 
-    res.json({ task: result, admin_balance: systemBalance - totalCost });
+    const balRow = await db.get("SELECT value FROM settings WHERE key = 'admin_balance'");
+    res.json({ task: result, admin_balance: parseFloat(balRow?.value || 0) });
   } catch (error) {
     console.error('Admin create task error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
@@ -194,7 +192,9 @@ router.delete('/tasks/:id', async (req, res) => {
     if (task && task.max_completions > 0) {
       const remaining = task.max_completions - (task.current_completions || 0);
       if (remaining > 0) {
-        const refund = remaining * (task.reward || 0);
+        const priceRow = await db.get("SELECT value FROM settings WHERE key = 'ad_price'");
+        const adPrice = parseFloat(priceRow?.value) || 0.002;
+        const refund = remaining * adPrice;
         await db.run(
           "UPDATE settings SET value = CAST(CAST(value AS NUMERIC) + ? AS TEXT) WHERE key = 'admin_balance'",
           refund
