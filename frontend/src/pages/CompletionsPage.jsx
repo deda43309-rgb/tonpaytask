@@ -226,8 +226,15 @@ export default function CompletionsPage() {
                       </div>
                     </div>
 
-                    {/* Subscription countdown */}
-                    {c.type === 'subscribe_channel' && c.obligation_end && c.sub_status !== 'penalized' && (
+                    {/* Subscription status */}
+                    {c.type === 'subscribe_channel' && c.obligation_end && c.sub_status === 'passed' && (
+                      <div style={{ marginTop: 6, marginLeft: 48 }}>
+                        <span style={{ fontSize: 10, color: '#34c759', fontWeight: 600 }}>
+                          ✅ Выполнено
+                        </span>
+                      </div>
+                    )}
+                    {c.type === 'subscribe_channel' && c.obligation_end && (!c.sub_status || c.sub_status === 'pending') && (
                       <div style={{ marginTop: 6, marginLeft: 48 }}>
                         <Countdown endDate={c.obligation_end} channelUrl={c.target_url} channelId={c.channel_id} />
                       </div>
