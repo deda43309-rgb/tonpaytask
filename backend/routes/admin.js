@@ -287,6 +287,64 @@ router.get('/users', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/users/:id/block
+ * Заблокировать / разблокировать пользователя
+ */
+router.post('/users/:id/block', async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = parseInt(req.params.id);
+    const user = await db.get('SELECT id, is_blocked FROM users WHERE id = ?', userId);
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+
+    const newStatus = user.is_blocked ? 0 : 1;
+    await db.run('UPDATE users SET is_blocked = ?, updated_at = NOW() WHERE id = ?', newStatus, userId);
+
+    res.json({ success: true, is_blocked: newStatus });
+  } catch (error) {
+    console.error('Admin block user error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * DELETE /api/admin/users/:id
+ * Удалить пользователя (с PIN-кодом)
+ */
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = parseInt(req.params.id);
+    const { pin } = req.body;
+    const correctPin = process.env.ADMIN_PIN || '1234';
+
+    if (!pin || String(pin) !== String(correctPin)) {
+      return res.status(403).json({ error: 'Неверный PIN-код' });
+    }
+
+    const user = await db.get('SELECT id FROM users WHERE id = ?', userId);
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+
+    // Delete user data in correct order
+    await db.run("DELETE FROM subscription_checks WHERE user_id = ?", userId);
+    await db.run("DELETE FROM ad_task_completions WHERE user_id = ?", userId);
+    await db.run("DELETE FROM ad_transactions WHERE user_id = ?", userId);
+    await db.run("DELETE FROM ad_deposits WHERE user_id = ?", userId);
+    await db.run("DELETE FROM ad_tasks WHERE advertiser_id = ?", userId);
+    await db.run("DELETE FROM task_completions WHERE user_id = ?", userId);
+    await db.run("DELETE FROM daily_bonuses WHERE user_id = ?", userId);
+    await db.run("DELETE FROM referrals WHERE referrer_id = ? OR referred_id = ?", userId, userId);
+    await db.run("DELETE FROM users WHERE id = ?", userId);
+
+    console.log(`⚠️ User ${userId} deleted by admin`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Admin delete user error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
  * GET /api/admin/settings
  * Получить настройки
  */

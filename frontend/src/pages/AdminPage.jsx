@@ -415,11 +415,11 @@ export default function AdminPage({ user }) {
                         {u.is_blocked ? ' 🚫' : ''}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                        💎 {formatTON(u.balance)} · ✅ {u.tasks_completed} · 👥 {u.referral_count || 0}
+                        💎 {formatTON(u.balance)} · ✅ {u.tasks_completed} заданий · 👥 {u.referral_count || 0}
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                     <span style={{
                       fontSize: 10, padding: '3px 8px', borderRadius: 6,
                       background: (u.karma ?? 50) >= 50 ? 'rgba(52,199,89,0.1)' : (u.karma ?? 50) >= 20 ? 'rgba(255,149,0,0.1)' : 'rgba(255,59,48,0.1)',
@@ -441,6 +441,47 @@ export default function AdminPage({ user }) {
                     <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, background: 'rgba(52,199,89,0.1)', color: '#34c759', fontWeight: 700 }}>
                       💰 {formatTON(u.total_earned)}
                     </span>
+                  </div>
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api.blockUser(u.id);
+                          hapticFeedback('medium');
+                          showToastMsg(u.is_blocked ? 'Разблокирован ✅' : 'Заблокирован 🚫');
+                          loadData();
+                        } catch (err) { showToastMsg(err.message, 'error'); }
+                      }}
+                      style={{
+                        flex: 1, padding: '6px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
+                        fontSize: 11, fontWeight: 700,
+                        background: u.is_blocked ? 'rgba(52,199,89,0.12)' : 'rgba(255,149,0,0.12)',
+                        color: u.is_blocked ? '#34c759' : '#ff9500',
+                      }}
+                    >
+                      {u.is_blocked ? '✅ Разблокировать' : '🚫 Заблокировать'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const pin = prompt('🔐 Введите PIN для удаления:');
+                        if (!pin) return;
+                        if (!confirm(`Удалить пользователя ${u.first_name || u.username || u.id}? Все данные будут удалены!`)) return;
+                        try {
+                          await api.deleteUser(u.id, pin);
+                          hapticFeedback('success');
+                          showToastMsg('Пользователь удалён ✅');
+                          loadData();
+                        } catch (err) { showToastMsg(err.message, 'error'); hapticFeedback('error'); }
+                      }}
+                      style={{
+                        padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                        fontSize: 11, fontWeight: 700,
+                        background: 'rgba(255,59,48,0.12)', color: '#ff3b30',
+                      }}
+                    >
+                      🗑
+                    </button>
                   </div>
                 </div>
               ))}

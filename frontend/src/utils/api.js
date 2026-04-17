@@ -63,6 +63,13 @@ export const deleteTask = (id) =>
   request(`/admin/tasks/${id}`, { method: 'DELETE' });
 export const getAdminUsers = (page = 1, sort = 'date') =>
   request(`/admin/users?page=${page}&sort=${sort}`);
+export const blockUser = (id) =>
+  request(`/admin/users/${id}/block`, { method: 'POST' });
+export const deleteUser = (id, pin) =>
+  request(`/admin/users/${id}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ pin }),
+  });
 export const getAdminSettings = () => request('/admin/settings');
 export const getAdRevenue = () => request('/admin/ad-revenue');
 export const updateAdminSettings = (data) =>
