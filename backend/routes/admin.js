@@ -64,13 +64,39 @@ router.get('/stats', async (req, res) => {
 
 /**
  * GET /api/admin/tasks
- * Все задания (включая неактивные)
+ * Все задания — и админские и рекламодателей
  */
 router.get('/tasks', async (req, res) => {
   try {
     const db = getDb();
-    const tasks = await db.all('SELECT * FROM tasks ORDER BY sort_order ASC, created_at DESC');
-    res.json({ tasks });
+    
+    // Admin tasks
+    const adminTasks = await db.all(`
+      SELECT t.*, 'admin' as source, NULL as advertiser_name
+      FROM tasks t
+      ORDER BY t.created_at DESC
+    `);
+
+    // Advertiser tasks
+    const adTasks = await db.all(`
+      SELECT at2.id, at2.type, at2.title, at2.description, at2.reward,
+        at2.url as target_url, at2.max_completions, at2.current_completions,
+        at2.status, at2.created_at, at2.image_url, at2.advertiser_id,
+        'ad' as source,
+        COALESCE(u.first_name, u.username, CAST(u.id AS TEXT)) as advertiser_name,
+        CASE WHEN at2.status = 'active' THEN 1 ELSE 0 END as is_active
+      FROM ad_tasks at2
+      LEFT JOIN users u ON u.id = at2.advertiser_id
+      WHERE at2.status != 'deleted'
+      ORDER BY at2.created_at DESC
+    `);
+
+    // Combine and sort by date
+    const all = [...adminTasks, ...adTasks].sort((a, b) => 
+      new Date(b.created_at) - new Date(a.created_at)
+    );
+
+    res.json({ tasks: all });
   } catch (error) {
     console.error('Admin get tasks error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });

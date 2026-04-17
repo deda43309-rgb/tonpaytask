@@ -291,7 +291,16 @@ export default function AdminPage({ user }) {
           )}
 
           {/* Tasks Tab */}
-          {tab === 'tasks' && (
+          {tab === 'tasks' && (() => {
+            const taskFilter = window._adminTaskFilter || 'all';
+            const setTaskFilter = (f) => { window._adminTaskFilter = f; setTasks([...tasks]); };
+            const filtered = taskFilter === 'all' ? tasks 
+              : taskFilter === 'admin' ? tasks.filter(t => t.source === 'admin')
+              : tasks.filter(t => t.source === 'ad');
+            const adminCount = tasks.filter(t => t.source === 'admin').length;
+            const adCount = tasks.filter(t => t.source === 'ad').length;
+
+            return (
             <div className="admin-tasks">
               <button
                 className="btn btn-primary btn-block mb-16"
@@ -301,33 +310,60 @@ export default function AdminPage({ user }) {
                 ➕ Создать задание
               </button>
 
+              {/* Filter buttons */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                {[
+                  { key: 'all', label: `Все (${tasks.length})` },
+                  { key: 'admin', label: `⚙️ Админ (${adminCount})` },
+                  { key: 'ad', label: `📢 Рекл. (${adCount})` },
+                ].map(f => (
+                  <button
+                    key={f.key}
+                    onClick={() => { hapticFeedback('light'); setTaskFilter(f.key); }}
+                    style={{
+                      flex: 1, padding: '8px 4px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                      fontSize: 12, fontWeight: 600, transition: 'all 0.2s',
+                      background: taskFilter === f.key ? 'var(--accent-primary)' : 'var(--bg-glass)',
+                      color: taskFilter === f.key ? '#fff' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="tasks-list stagger">
-                {tasks.map(task => (
-                  <div className={`card admin-task-item ${!task.is_active ? 'inactive' : ''}`} key={task.id}>
+                {filtered.map(task => (
+                  <div className={`card admin-task-item ${!task.is_active ? 'inactive' : ''}`} key={`${task.source}-${task.id}`}>
                     <div className="admin-task-top">
-                      <span className="admin-task-icon">{task.icon || '📋'}</span>
+                      <span className="admin-task-icon">
+                        {task.source === 'ad' ? '📢' : (task.icon || '📋')}
+                      </span>
                       <div className="admin-task-info">
                         <span className="admin-task-title">{task.title}</span>
                         <span className="admin-task-meta">
-                          +{formatTON(task.reward)} TON · {task.current_completions} выполнений
+                          {task.source === 'ad' ? `👤 ${task.advertiser_name} · ` : '⚙️ Админ · '}
+                          {task.current_completions}/{task.max_completions || '∞'} выполнений
                         </span>
                       </div>
                       <span className={`badge ${task.is_active ? 'badge-success' : 'badge-danger'}`}>
                         {task.is_active ? 'Вкл' : 'Выкл'}
                       </span>
                     </div>
-                    <div className="admin-task-actions">
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleEditTask(task)}>✏️</button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleToggleTask(task)}>
-                        {task.is_active ? '⏸' : '▶️'}
-                      </button>
-                      <button className="btn btn-secondary btn-sm" onClick={() => handleDeleteTask(task.id)}>🗑</button>
-                    </div>
+                    {task.source === 'admin' && (
+                      <div className="admin-task-actions">
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleEditTask(task)}>✏️</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleToggleTask(task)}>
+                          {task.is_active ? '⏸' : '▶️'}
+                        </button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleDeleteTask(task.id)}>🗑</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
-              {tasks.length === 0 && (
+              {filtered.length === 0 && (
                 <div className="empty-state">
                   <span className="empty-state-icon">📋</span>
                   <h3 className="empty-state-title">Нет заданий</h3>
@@ -335,7 +371,8 @@ export default function AdminPage({ user }) {
                 </div>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* Users Tab */}
           {tab === 'users' && (
