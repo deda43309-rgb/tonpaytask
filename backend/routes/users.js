@@ -151,11 +151,15 @@ router.get('/referrals', async (req, res) => {
       userId
     );
 
+    const bonusRow = await db.get("SELECT value FROM settings WHERE key = 'referral_bonus'");
+    const referral_bonus = parseFloat(bonusRow?.value) || 0;
+
     res.json({
       referral_code: user.referral_code,
       referrals,
       total_bonus: parseFloat(totalBonus.total),
       count: referrals.length,
+      referral_bonus,
     });
   } catch (error) {
     console.error('Get referrals error:', error);

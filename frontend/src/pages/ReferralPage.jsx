@@ -8,6 +8,7 @@ import './ReferralPage.css';
 export default function ReferralPage({ user }) {
   const [referrals, setReferrals] = useState([]);
   const [totalBonus, setTotalBonus] = useState(0);
+  const [referralBonus, setReferralBonus] = useState(0);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -20,6 +21,7 @@ export default function ReferralPage({ user }) {
       const data = await api.getReferrals();
       setReferrals(data.referrals);
       setTotalBonus(data.total_bonus);
+      setReferralBonus(data.referral_bonus || 0);
     } catch (err) {
       console.error('Failed to load referrals:', err);
     } finally {
@@ -83,7 +85,7 @@ export default function ReferralPage({ user }) {
         <div className="referral-invite-icon">🎁</div>
         <h2 className="referral-invite-title">Приглашай друзей</h2>
         <p className="referral-invite-text">
-          Получайте по <strong>100 TON</strong> за каждого приглашённого друга — и вы, и ваш друг!
+          Получайте по <strong>{formatTON(referralBonus)} TON</strong> за каждого приглашённого друга — и вы, и ваш друг!
         </p>
 
         <div className="referral-link-box mt-16">
