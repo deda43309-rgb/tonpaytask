@@ -214,8 +214,6 @@ export default function CompletionsPage() {
                           {c.title}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                          {c.source === 'ad' ? '📢 Рекламное' : '⚙️ Системное'}
-                          {' · '}
                           {new Date(c.completed_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
