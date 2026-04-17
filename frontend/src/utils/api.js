@@ -61,8 +61,8 @@ export const updateTask = (id, data) =>
   });
 export const deleteTask = (id) =>
   request(`/admin/tasks/${id}`, { method: 'DELETE' });
-export const getAdminUsers = (page = 1) =>
-  request(`/admin/users?page=${page}`);
+export const getAdminUsers = (page = 1, sort = 'date') =>
+  request(`/admin/users?page=${page}&sort=${sort}`);
 export const getAdminSettings = () => request('/admin/settings');
 export const getAdRevenue = () => request('/admin/ad-revenue');
 export const updateAdminSettings = (data) =>

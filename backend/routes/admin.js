@@ -241,7 +241,7 @@ router.delete('/tasks/:id', async (req, res) => {
 
 /**
  * GET /api/admin/users
- * Список пользователей
+ * Список пользователей с расширенной информацией
  */
 router.get('/users', async (req, res) => {
   try {
@@ -249,12 +249,26 @@ router.get('/users', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
+    const sort = req.query.sort || 'date';
+
+    const sortMap = {
+      date: 'u.created_at DESC',
+      balance: 'u.balance DESC',
+      karma: 'u.karma ASC',
+      earned: 'u.total_earned DESC',
+      tasks: 'u.tasks_completed DESC',
+      ad_balance: 'u.ad_balance DESC',
+      penalties: 'penalty_count DESC',
+    };
+    const orderBy = sortMap[sort] || sortMap.date;
 
     const users = await db.all(`
       SELECT u.*, 
-        (SELECT COUNT(*) FROM referrals WHERE referrer_id = u.id) as referral_count
+        (SELECT COUNT(*) FROM referrals WHERE referrer_id = u.id) as referral_count,
+        (SELECT COUNT(*) FROM subscription_checks WHERE user_id = u.id AND status = 'penalized') as penalty_count,
+        (SELECT COALESCE(SUM(penalty_applied), 0) FROM subscription_checks WHERE user_id = u.id AND status = 'penalized') as penalty_amount
       FROM users u
-      ORDER BY u.created_at DESC
+      ORDER BY ${orderBy}
       LIMIT ? OFFSET ?
     `, limit, offset);
 

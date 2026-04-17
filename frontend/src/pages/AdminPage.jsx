@@ -21,6 +21,7 @@ export default function AdminPage({ user }) {
   const [revenue, setRevenue] = useState(null);
   const [resolving, setResolving] = useState(false);
   const [resolved, setResolved] = useState(null);
+  const [userSort, setUserSort] = useState('date');
   const resolveTimer = useRef(null);
 
   // Task form state
@@ -68,7 +69,7 @@ export default function AdminPage({ user }) {
       return;
     }
     loadData();
-  }, [tab]);
+  }, [tab, userSort]);
 
   const loadData = async () => {
     setLoading(true);
@@ -84,7 +85,7 @@ export default function AdminPage({ user }) {
         setTasks(tasksData.tasks);
         setSettings(settingsData.settings || {});
       } else if (tab === 'users') {
-        const data = await api.getAdminUsers();
+        const data = await api.getAdminUsers(1, userSort);
         setUsers(data.users);
       } else if (tab === 'settings') {
         const data = await api.getAdminSettings();
@@ -377,17 +378,68 @@ export default function AdminPage({ user }) {
           {/* Users Tab */}
           {tab === 'users' && (
             <div className="admin-users stagger">
+              {/* Sort */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+                {[
+                  { key: 'date', label: '📅 Дата' },
+                  { key: 'balance', label: '💎 Баланс' },
+                  { key: 'karma', label: '☯️ Карма' },
+                  { key: 'earned', label: '💰 Доход' },
+                  { key: 'penalties', label: '⚠️ Штрафы' },
+                  { key: 'ad_balance', label: '📢 Рекл.' },
+                ].map(s => (
+                  <button
+                    key={s.key}
+                    onClick={() => { setUserSort(s.key); hapticFeedback('light'); }}
+                    style={{
+                      padding: '6px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                      fontSize: 11, fontWeight: 600, transition: 'all 0.2s',
+                      background: userSort === s.key ? 'var(--accent-primary)' : 'var(--bg-glass)',
+                      color: userSort === s.key ? '#fff' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
               {users.map(u => (
-                <div className="card admin-user-item" key={u.id}>
-                  <div className="admin-user-avatar">
-                    {(u.first_name || u.username || '?')[0].toUpperCase()}
+                <div className="card admin-user-item" key={u.id} style={{ padding: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div className="admin-user-avatar">
+                      {(u.first_name || u.username || '?')[0].toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {u.first_name || u.username || `#${u.id}`}
+                        {u.is_blocked ? ' 🚫' : ''}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        💎 {formatTON(u.balance)} · ✅ {u.tasks_completed} · 👥 {u.referral_count || 0}
+                      </div>
+                    </div>
                   </div>
-                  <div className="admin-user-info">
-                    <span className="admin-user-name">
-                      {u.first_name || u.username || `#${u.id}`}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontSize: 10, padding: '3px 8px', borderRadius: 6,
+                      background: (u.karma ?? 50) >= 50 ? 'rgba(52,199,89,0.1)' : (u.karma ?? 50) >= 20 ? 'rgba(255,149,0,0.1)' : 'rgba(255,59,48,0.1)',
+                      color: (u.karma ?? 50) >= 50 ? '#34c759' : (u.karma ?? 50) >= 20 ? '#ff9500' : '#ff3b30',
+                      fontWeight: 700,
+                    }}>
+                      ☯️ {u.karma ?? 50}
                     </span>
-                    <span className="admin-user-meta">
-                      💎 {formatTON(u.balance)} · ✅ {u.tasks_completed} · 👥 {u.referral_count || 0}
+                    {parseFloat(u.ad_balance) > 0 && (
+                      <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, background: 'rgba(0,122,255,0.1)', color: '#007aff', fontWeight: 700 }}>
+                        📢 {formatTON(u.ad_balance)}
+                      </span>
+                    )}
+                    {parseInt(u.penalty_count) > 0 && (
+                      <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, background: 'rgba(255,59,48,0.1)', color: '#ff3b30', fontWeight: 700 }}>
+                        ⚠️ {u.penalty_count} ({formatTON(u.penalty_amount)})
+                      </span>
+                    )}
+                    <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, background: 'rgba(52,199,89,0.1)', color: '#34c759', fontWeight: 700 }}>
+                      💰 {formatTON(u.total_earned)}
                     </span>
                   </div>
                 </div>
