@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
     const userId = req.telegramUser.id;
 
     // Regular admin tasks
-    const tasks = await db.all(`
+    let tasks = await db.all(`
       SELECT t.*, 
         CASE WHEN tc.id IS NOT NULL THEN 1 ELSE 0 END as is_completed,
         0 as is_ad
