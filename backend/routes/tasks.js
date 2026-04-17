@@ -289,11 +289,11 @@ router.post('/:id/complete-ad', async (req, res) => {
       // Log user reward transaction
       await tx.run('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)', taskId, userId, 'user_reward', userReward);
 
-      // Credit referrer bonus (ad_ref_reward)
+      // Credit referrer bonus (ad_ref_reward) — only if referred user has non-critical karma
       const executor = await tx.get('SELECT referred_by FROM users WHERE id = ?', userId);
       let actualCommission = task.reward - userReward; // everything left is commission
 
-      if (executor && executor.referred_by && refReward > 0) {
+      if (executor && executor.referred_by && refReward > 0 && karma >= 20) {
         await tx.run(`
           UPDATE users SET 
             balance = balance + ?,
