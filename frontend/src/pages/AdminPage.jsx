@@ -476,10 +476,10 @@ export default function AdminPage({ user }) {
                     background: 'var(--bg-glass)', borderRadius: 12, padding: 8,
                   }}>
                     {[
-                      { icon: '💎', val: formatTON(u.balance), label: 'Баланс' },
+                      { icon: '💎', val: formatTON(u.balance, 5), label: 'Баланс' },
                       { icon: '✅', val: u.tasks_completed, label: 'Задания' },
                       { icon: '👥', val: u.referral_count || 0, label: 'Рефы' },
-                      { icon: '💰', val: formatTON(u.total_earned), label: 'Доход' },
+                      { icon: '💰', val: formatTON(u.total_earned, 5), label: 'Доход' },
                     ].map((s, i) => (
                       <div key={i} style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: 10, marginBottom: 2 }}>{s.icon}</div>
@@ -493,12 +493,12 @@ export default function AdminPage({ user }) {
                   <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
                     {parseFloat(u.ad_balance) > 0 && (
                       <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.15)', color: '#007aff', fontWeight: 700 }}>
-                        📢 Рекл: {formatTON(u.ad_balance)}
+                        📢 Рекл: {formatTON(u.ad_balance, 5)}
                       </span>
                     )}
                     {parseInt(u.penalty_count) > 0 && (
                       <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'rgba(255,59,48,0.08)', border: '1px solid rgba(255,59,48,0.15)', color: '#ff3b30', fontWeight: 700 }}>
-                        ⚠️ {u.penalty_count} штр. ({formatTON(u.penalty_amount)})
+                        ⚠️ {u.penalty_count} штр. ({formatTON(u.penalty_amount, 5)})
                       </span>
                     )}
                   </div>
