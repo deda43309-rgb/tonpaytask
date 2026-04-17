@@ -403,47 +403,91 @@ export default function AdminPage({ user }) {
                 ))}
               </div>
 
-              {users.map(u => (
-                <div className="card admin-user-item" key={u.id} style={{ padding: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div className="admin-user-avatar">
+              {users.map(u => {
+                const karma = u.karma ?? 50;
+                const karmaColor = karma >= 50 ? '#34c759' : karma >= 20 ? '#ff9500' : '#ff3b30';
+                const avatarGrad = karma >= 50
+                  ? 'linear-gradient(135deg, #34c759, #30d158)'
+                  : karma >= 20
+                    ? 'linear-gradient(135deg, #ff9500, #ffb340)'
+                    : 'linear-gradient(135deg, #ff3b30, #ff6961)';
+                return (
+                <div key={u.id} style={{
+                  background: 'var(--bg-card)',
+                  borderRadius: 16,
+                  border: u.is_blocked ? '1px solid rgba(255,59,48,0.3)' : '1px solid var(--border)',
+                  padding: 16,
+                  marginBottom: 10,
+                  opacity: u.is_blocked ? 0.7 : 1,
+                  transition: 'all 0.2s',
+                }}>
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+                      background: avatarGrad,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 18, fontWeight: 800, color: '#fff',
+                      boxShadow: `0 4px 12px ${karmaColor}33`,
+                    }}>
                       {(u.first_name || u.username || '?')[0].toUpperCase()}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {u.first_name || u.username || `#${u.id}`}
-                        {u.is_blocked ? ' 🚫' : ''}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {u.first_name || u.username || `ID: ${u.id}`}
+                        </span>
+                        {u.is_blocked && <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'rgba(255,59,48,0.15)', color: '#ff3b30', fontWeight: 700 }}>BAN</span>}
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                        💎 {formatTON(u.balance)} · ✅ {u.tasks_completed} заданий · 👥 {u.referral_count || 0}
-                      </div>
+                      {u.username && (
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>@{u.username}</div>
+                      )}
+                    </div>
+                    <div style={{
+                      padding: '4px 10px', borderRadius: 8,
+                      background: `${karmaColor}18`, border: `1px solid ${karmaColor}30`,
+                      textAlign: 'center',
+                    }}>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: karmaColor, lineHeight: 1 }}>{karma}</div>
+                      <div style={{ fontSize: 8, color: karmaColor, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>карма</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span style={{
-                      fontSize: 10, padding: '3px 8px', borderRadius: 6,
-                      background: (u.karma ?? 50) >= 50 ? 'rgba(52,199,89,0.1)' : (u.karma ?? 50) >= 20 ? 'rgba(255,149,0,0.1)' : 'rgba(255,59,48,0.1)',
-                      color: (u.karma ?? 50) >= 50 ? '#34c759' : (u.karma ?? 50) >= 20 ? '#ff9500' : '#ff3b30',
-                      fontWeight: 700,
-                    }}>
-                      ☯️ {u.karma ?? 50}
-                    </span>
+
+                  {/* Stats Grid */}
+                  <div style={{
+                    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginTop: 12,
+                    background: 'var(--bg-glass)', borderRadius: 12, padding: 8,
+                  }}>
+                    {[
+                      { icon: '💎', val: formatTON(u.balance), label: 'Баланс' },
+                      { icon: '✅', val: u.tasks_completed, label: 'Задания' },
+                      { icon: '👥', val: u.referral_count || 0, label: 'Рефы' },
+                      { icon: '💰', val: formatTON(u.total_earned), label: 'Доход' },
+                    ].map((s, i) => (
+                      <div key={i} style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 10, marginBottom: 2 }}>{s.icon}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>{s.val}</div>
+                        <div style={{ fontSize: 8, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Badges */}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
                     {parseFloat(u.ad_balance) > 0 && (
-                      <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, background: 'rgba(0,122,255,0.1)', color: '#007aff', fontWeight: 700 }}>
-                        📢 {formatTON(u.ad_balance)}
+                      <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'rgba(0,122,255,0.08)', border: '1px solid rgba(0,122,255,0.15)', color: '#007aff', fontWeight: 700 }}>
+                        📢 Рекл: {formatTON(u.ad_balance)}
                       </span>
                     )}
                     {parseInt(u.penalty_count) > 0 && (
-                      <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, background: 'rgba(255,59,48,0.1)', color: '#ff3b30', fontWeight: 700 }}>
-                        ⚠️ {u.penalty_count} ({formatTON(u.penalty_amount)})
+                      <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 20, background: 'rgba(255,59,48,0.08)', border: '1px solid rgba(255,59,48,0.15)', color: '#ff3b30', fontWeight: 700 }}>
+                        ⚠️ {u.penalty_count} штр. ({formatTON(u.penalty_amount)})
                       </span>
                     )}
-                    <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, background: 'rgba(52,199,89,0.1)', color: '#34c759', fontWeight: 700 }}>
-                      💰 {formatTON(u.total_earned)}
-                    </span>
                   </div>
+
                   {/* Actions */}
-                  <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                     <button
                       onClick={async () => {
                         try {
@@ -454,9 +498,9 @@ export default function AdminPage({ user }) {
                         } catch (err) { showToastMsg(err.message, 'error'); }
                       }}
                       style={{
-                        flex: 1, padding: '6px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
-                        fontSize: 11, fontWeight: 700,
-                        background: u.is_blocked ? 'rgba(52,199,89,0.12)' : 'rgba(255,149,0,0.12)',
+                        flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
+                        fontSize: 12, fontWeight: 700, transition: 'all 0.2s',
+                        background: u.is_blocked ? 'rgba(52,199,89,0.1)' : 'rgba(255,149,0,0.1)',
                         color: u.is_blocked ? '#34c759' : '#ff9500',
                       }}
                     >
@@ -466,7 +510,7 @@ export default function AdminPage({ user }) {
                       onClick={async () => {
                         const pin = prompt('🔐 Введите PIN для удаления:');
                         if (!pin) return;
-                        if (!confirm(`Удалить пользователя ${u.first_name || u.username || u.id}? Все данные будут удалены!`)) return;
+                        if (!confirm(`Удалить ${u.first_name || u.username || u.id}? Все данные будут потеряны!`)) return;
                         try {
                           await api.deleteUser(u.id, pin);
                           hapticFeedback('success');
@@ -475,16 +519,17 @@ export default function AdminPage({ user }) {
                         } catch (err) { showToastMsg(err.message, 'error'); hapticFeedback('error'); }
                       }}
                       style={{
-                        padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                        fontSize: 11, fontWeight: 700,
-                        background: 'rgba(255,59,48,0.12)', color: '#ff3b30',
+                        padding: '8px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                        fontSize: 12, fontWeight: 700, transition: 'all 0.2s',
+                        background: 'rgba(255,59,48,0.1)', color: '#ff3b30',
                       }}
                     >
                       🗑
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               {users.length === 0 && (
                 <div className="empty-state">
