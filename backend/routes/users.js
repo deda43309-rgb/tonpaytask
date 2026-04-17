@@ -151,6 +151,23 @@ router.get('/referrals', async (req, res) => {
       userId
     );
 
+    // Referral earnings from task completions (ref_reward)
+    const taskEarnings = await db.get(
+      "SELECT COALESCE(SUM(CAST(amount AS NUMERIC)), 0) as total FROM ad_transactions WHERE user_id = ? AND type = 'ref_reward'",
+      userId
+    );
+
+    // Per-referral task earnings
+    for (const ref of referrals) {
+      const refTaskEarn = await db.get(
+        `SELECT COALESCE(SUM(CAST(at2.amount AS NUMERIC)), 0) as total
+         FROM ad_transactions at2
+         WHERE at2.user_id = ? AND at2.type = 'ref_reward'`,
+        userId
+      );
+      ref.task_earnings = parseFloat(refTaskEarn?.total) || 0;
+    }
+
     const bonusRow = await db.get("SELECT value FROM settings WHERE key = 'referral_bonus'");
     const referral_bonus = parseFloat(bonusRow?.value) || 0;
 
@@ -158,6 +175,8 @@ router.get('/referrals', async (req, res) => {
       referral_code: user.referral_code,
       referrals,
       total_bonus: parseFloat(totalBonus.total),
+      task_ref_earnings: parseFloat(taskEarnings.total),
+      total_all: parseFloat(totalBonus.total) + parseFloat(taskEarnings.total),
       count: referrals.length,
       referral_bonus,
     });

@@ -8,6 +8,7 @@ import './ReferralPage.css';
 export default function ReferralPage({ user }) {
   const [referrals, setReferrals] = useState([]);
   const [totalBonus, setTotalBonus] = useState(0);
+  const [taskRefEarnings, setTaskRefEarnings] = useState(0);
   const [referralBonus, setReferralBonus] = useState(0);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -21,6 +22,7 @@ export default function ReferralPage({ user }) {
       const data = await api.getReferrals();
       setReferrals(data.referrals);
       setTotalBonus(data.total_bonus);
+      setTaskRefEarnings(data.task_ref_earnings || 0);
       setReferralBonus(data.referral_bonus || 0);
     } catch (err) {
       console.error('Failed to load referrals:', err);
@@ -113,10 +115,21 @@ export default function ReferralPage({ user }) {
           <span className="referral-stat-label">Друзей</span>
         </div>
         <div className="card referral-stat-card">
-          <span className="referral-stat-icon">💎</span>
+          <span className="referral-stat-icon">🎁</span>
           <span className="referral-stat-value">{formatTON(totalBonus)}</span>
-          <span className="referral-stat-label">Заработано</span>
+          <span className="referral-stat-label">За приглашения</span>
         </div>
+        <div className="card referral-stat-card">
+          <span className="referral-stat-icon">📋</span>
+          <span className="referral-stat-value">{formatTON(taskRefEarnings)}</span>
+          <span className="referral-stat-label">За задания</span>
+        </div>
+      </div>
+
+      {/* Total */}
+      <div className="card mt-12 animate-slide" style={{ animationDelay: '150ms', padding: 14, textAlign: 'center', background: 'linear-gradient(135deg, rgba(52,199,89,0.08), rgba(52,199,89,0.02))', border: '1px solid rgba(52,199,89,0.15)' }}>
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>💰 Всего заработано от рефералов</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: '#34c759', marginTop: 4 }}>{formatTON(totalBonus + taskRefEarnings)} TON</div>
       </div>
 
       {/* Referral List */}
