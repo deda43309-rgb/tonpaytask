@@ -167,6 +167,9 @@ router.post('/:id/complete', async (req, res) => {
         WHERE id = ?
       `, actualUserReward, actualUserReward, userId);
 
+      // Log user reward transaction
+      await tx.run('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)', taskId, userId, 'user_reward', userReward);
+
       // Credit referrer bonus (ad_ref_reward) — only if referred user has non-critical karma
       const executor = await tx.get('SELECT referred_by FROM users WHERE id = ?', userId);
       let actualCommission = parseFloat(task.reward) - userReward; // everything left is commission
@@ -179,6 +182,9 @@ router.post('/:id/complete', async (req, res) => {
             updated_at = NOW()
           WHERE id = ?
         `, refReward, refReward, executor.referred_by);
+
+        // Log ref reward transaction
+        await tx.run('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)', taskId, executor.referred_by, 'ref_reward', refReward);
         actualCommission = parseFloat(task.reward) - userReward - refReward;
       }
 
@@ -188,6 +194,7 @@ router.post('/:id/complete', async (req, res) => {
       // Add commission back to admin balance
       const totalCommission = actualCommission + (karmaModifier < 0 ? karmaAdjust : -karmaAdjust);
       if (totalCommission > 0) {
+        await tx.run('INSERT INTO ad_transactions (task_id, user_id, type, amount) VALUES (?, ?, ?, ?)', taskId, null, 'commission', totalCommission);
         await tx.run("UPDATE settings SET value = CAST(CAST(value AS NUMERIC) + ? AS TEXT) WHERE key = 'admin_balance'", totalCommission);
       }
 
