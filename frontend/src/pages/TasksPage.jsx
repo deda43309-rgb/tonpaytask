@@ -73,12 +73,10 @@ export default function TasksPage({ user, onUserUpdate }) {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const userBalance = parseFloat(user?.balance || 0);
   const filteredTasks = (filter === 'all'
     ? tasks
     : tasks.filter(t => t.type === filter)
-  ).filter(t => !t.is_completed)
-   .filter(t => !(t.type === 'subscribe_channel' && userBalance <= 0));
+  ).filter(t => !t.is_completed);
 
   if (loading) return <Loader text="Загрузка заданий..." />;
 
