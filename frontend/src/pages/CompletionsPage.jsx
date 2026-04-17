@@ -123,7 +123,6 @@ export default function CompletionsPage() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     api.getCompletions()
@@ -137,12 +136,8 @@ export default function CompletionsPage() {
   const completions = data?.completions || [];
   const stats = data?.stats || {};
 
-  const filtered = filter === 'all'
-    ? completions
-    : completions.filter(c => c.source === filter);
-
   const grouped = {};
-  filtered.forEach(c => {
+  completions.forEach(c => {
     const date = new Date(c.completed_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     if (!grouped[date]) grouped[date] = [];
     grouped[date].push(c);
@@ -177,29 +172,8 @@ export default function CompletionsPage() {
         </div>
       </div>
 
-      <div className="mt-16 animate-slide" style={{ display: 'flex', gap: 8, animationDelay: '80ms' }}>
-        {[
-          { key: 'all', label: `Все (${completions.length})` },
-          { key: 'admin', label: `Системные (${stats.admin_count})` },
-          { key: 'ad', label: `Рекламные (${stats.ad_count})` },
-        ].map(f => (
-          <button
-            key={f.key}
-            onClick={() => { hapticFeedback('light'); setFilter(f.key); }}
-            style={{
-              flex: 1, padding: '8px 4px', borderRadius: 10, border: 'none', cursor: 'pointer',
-              fontSize: 12, fontWeight: 600, transition: 'all 0.2s',
-              background: filter === f.key ? 'var(--accent-primary)' : 'var(--bg-glass)',
-              color: filter === f.key ? '#fff' : 'var(--text-secondary)',
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
       <div className="mt-16 animate-slide" style={{ animationDelay: '160ms' }}>
-        {filtered.length === 0 ? (
+        {completions.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: 40 }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>📭</div>
             <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>Нет выполненных заданий</div>
