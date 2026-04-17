@@ -49,6 +49,13 @@ router.get('/', async (req, res) => {
 
     console.log(`Tasks for user ${userId}: ${tasks.length} regular, ${adTasks.length} ad`);
 
+    // Override ad task reward for display (stored as ad_price, show as ad_user_reward)
+    if (adTasks.length > 0) {
+      const userRewardRow = await db.get("SELECT value FROM settings WHERE key = 'ad_user_reward'");
+      const displayReward = parseFloat(userRewardRow?.value) || 10;
+      adTasks = adTasks.map(t => ({ ...t, reward: displayReward }));
+    }
+
     // Get penalty and obligation settings
     const penaltyRow = await db.get("SELECT value FROM settings WHERE key = 'unsub_penalty'");
     const unsub_penalty = parseFloat(penaltyRow?.value) || 0;
