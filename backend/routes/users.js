@@ -177,7 +177,7 @@ router.get('/completions', async (req, res) => {
     const checkHours = parseFloat(checkHoursRow?.value) || 72;
 
     const adminCompletions = await db.all(`
-      SELECT tc.id, tc.completed_at, t.title, t.reward, t.type, t.icon, t.image_url, t.target_url, 'admin' as source,
+      SELECT tc.id, tc.completed_at, t.title, t.reward, t.type, t.icon, t.image_url, t.target_url, t.target_id as channel_id, 'admin' as source,
         t.id as task_id,
         sc.status as sub_status
       FROM task_completions tc
@@ -190,7 +190,7 @@ router.get('/completions', async (req, res) => {
     const adCompletions = await db.all(`
       SELECT atc.id, atc.completed_at, at2.title, at2.reward, at2.type, at2.image_url, at2.url as target_url, 'ad' as source,
         at2.id as task_id,
-        sc.status as sub_status
+        sc.status as sub_status, sc.channel_id
       FROM ad_task_completions atc
       JOIN ad_tasks at2 ON at2.id = atc.task_id
       LEFT JOIN subscription_checks sc ON sc.user_id = atc.user_id AND sc.task_id = at2.id AND sc.task_type = 'ad'
@@ -266,6 +266,39 @@ router.get('/penalties', async (req, res) => {
     });
   } catch (error) {
     console.error('Get penalties error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * POST /api/users/check-unsubscribed
+ * Проверить отписался ли юзер от канала (после истечения обязательного периода)
+ */
+router.post('/check-unsubscribed', async (req, res) => {
+  try {
+    const { getBot } = require('../services/bot');
+    const bot = getBot();
+    if (!bot) {
+      return res.status(500).json({ error: 'Бот не инициализирован' });
+    }
+
+    const userId = req.telegramUser.id;
+    const { channel_id } = req.body;
+
+    if (!channel_id) {
+      return res.status(400).json({ error: 'channel_id обязателен' });
+    }
+
+    try {
+      const chatMember = await bot.getChatMember(channel_id, userId);
+      const subscribed = ['member', 'administrator', 'creator'].includes(chatMember.status);
+      res.json({ subscribed });
+    } catch (e) {
+      // If not found or error — treat as unsubscribed
+      res.json({ subscribed: false });
+    }
+  } catch (error) {
+    console.error('Check unsubscribed error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });

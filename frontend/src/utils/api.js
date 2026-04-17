@@ -110,3 +110,8 @@ export const resetDatabase = (pin, password) =>
   });
 export const checkSubscriptions = () =>
   request('/admin/check-subscriptions', { method: 'POST' });
+export const checkUnsubscribed = (channel_id) =>
+  request('/users/check-unsubscribed', {
+    method: 'POST',
+    body: JSON.stringify({ channel_id }),
+  });

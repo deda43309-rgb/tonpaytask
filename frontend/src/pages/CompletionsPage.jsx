@@ -11,9 +11,11 @@ const TYPE_ICONS = {
   visit_link: '🔗',
 };
 
-function Countdown({ endDate, channelUrl }) {
+function Countdown({ endDate, channelUrl, channelId }) {
   const [timeLeft, setTimeLeft] = useState('');
   const [expired, setExpired] = useState(false);
+  const [unsubscribed, setUnsubscribed] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     const update = () => {
@@ -34,7 +36,35 @@ function Countdown({ endDate, channelUrl }) {
     return () => clearInterval(t);
   }, [endDate]);
 
+  const handleUnsubscribe = async () => {
+    hapticFeedback('light');
+    // Open channel first
+    if (channelUrl) window.open(channelUrl, '_blank');
+    // After a delay, check if actually unsubscribed
+    setChecking(true);
+    setTimeout(async () => {
+      try {
+        const result = await api.checkUnsubscribed(channelId);
+        if (!result.subscribed) {
+          setUnsubscribed(true);
+          hapticFeedback('success');
+        }
+      } catch (e) {
+        console.error('Check unsub error:', e);
+      } finally {
+        setChecking(false);
+      }
+    }, 3000);
+  };
+
   if (expired) {
+    if (unsubscribed) {
+      return (
+        <span style={{ fontSize: 10, color: '#34c759', fontWeight: 600 }}>
+          ✅ Отписались
+        </span>
+      );
+    }
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 10, color: '#34c759', fontWeight: 600 }}>
@@ -42,17 +72,16 @@ function Countdown({ endDate, channelUrl }) {
         </span>
         {channelUrl && (
           <button
-            onClick={() => {
-              hapticFeedback('light');
-              window.open(channelUrl, '_blank');
-            }}
+            onClick={handleUnsubscribe}
+            disabled={checking}
             style={{
               padding: '4px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
               fontSize: 11, fontWeight: 700, background: 'rgba(255,59,48,0.12)',
               color: '#ff3b30', transition: 'all 0.2s',
+              opacity: checking ? 0.5 : 1,
             }}
           >
-            🔕 Отписаться
+            {checking ? '⏳ Проверка...' : '🔕 Отписаться'}
           </button>
         )}
       </div>
@@ -200,7 +229,7 @@ export default function CompletionsPage() {
                     {/* Subscription countdown */}
                     {c.type === 'subscribe_channel' && c.obligation_end && c.sub_status !== 'penalized' && (
                       <div style={{ marginTop: 6, marginLeft: 48 }}>
-                        <Countdown endDate={c.obligation_end} channelUrl={c.target_url} />
+                        <Countdown endDate={c.obligation_end} channelUrl={c.target_url} channelId={c.channel_id} />
                       </div>
                     )}
                     {c.type === 'subscribe_channel' && c.sub_status === 'penalized' && (
