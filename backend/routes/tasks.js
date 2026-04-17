@@ -49,12 +49,11 @@ router.get('/', async (req, res) => {
 
     console.log(`Tasks for user ${userId}: ${tasks.length} regular, ${adTasks.length} ad`);
 
-    // Override ad task reward for display (stored as ad_price, show as ad_user_reward)
-    if (adTasks.length > 0) {
-      const userRewardRow = await db.get("SELECT value FROM settings WHERE key = 'ad_user_reward'");
-      const displayReward = parseFloat(userRewardRow?.value) || 10;
-      adTasks = adTasks.map(t => ({ ...t, reward: displayReward }));
-    }
+    // Override reward for display — all tasks show ad_user_reward (actual user payout)
+    const userRewardRow = await db.get("SELECT value FROM settings WHERE key = 'ad_user_reward'");
+    const displayReward = parseFloat(userRewardRow?.value) || 10;
+    tasks = tasks.map(t => ({ ...t, reward: displayReward }));
+    adTasks = adTasks.map(t => ({ ...t, reward: displayReward }));
 
     // Get penalty and obligation settings
     const penaltyRow = await db.get("SELECT value FROM settings WHERE key = 'unsub_penalty'");
@@ -131,6 +130,13 @@ router.post('/:id/complete', async (req, res) => {
       return res.status(400).json({ error: 'Проверка не пройдена. Сначала выполните задание.' });
     }
 
+    // Get pricing settings (same as ad tasks)
+    const pricingRows = await db.all("SELECT key, value FROM settings WHERE key IN ('ad_user_reward','ad_ref_reward','sub_check_hours')");
+    const ps = {};
+    pricingRows.forEach(r => { ps[r.key] = parseFloat(r.value); });
+    const userReward = ps.ad_user_reward || 10;
+    const refReward = ps.ad_ref_reward || 2;
+
     // Complete the task (transaction)
     const updatedUser = await db.transaction(async (tx) => {
       // Add completion
@@ -146,12 +152,12 @@ router.post('/:id/complete', async (req, res) => {
       if (karma >= 80) karmaModifier = (ks.karma_bonus_high || 5) / 100;
       else if (karma >= 20 && karma < 50) karmaModifier = -(ks.karma_penalty_low || 10) / 100;
       else if (karma < 20) karmaModifier = -(ks.karma_penalty_critical || 15) / 100;
-      const karmaAdjust = Math.round(task.reward * Math.abs(karmaModifier) * 100) / 100;
-      const actualReward = karmaModifier >= 0 
-        ? task.reward + karmaAdjust 
-        : task.reward - karmaAdjust;
+      const karmaAdjust = Math.round(userReward * Math.abs(karmaModifier) * 100) / 100;
+      const actualUserReward = karmaModifier >= 0
+        ? userReward + karmaAdjust
+        : userReward - karmaAdjust;
 
-      // Update user balance
+      // Credit user balance
       await tx.run(`
         UPDATE users SET 
           balance = balance + ?,
@@ -159,18 +165,38 @@ router.post('/:id/complete', async (req, res) => {
           tasks_completed = tasks_completed + 1,
           updated_at = NOW()
         WHERE id = ?
-      `, actualReward, actualReward, userId);
+      `, actualUserReward, actualUserReward, userId);
 
-      // Deduct from admin balance (full amount + bonus if high karma)
-      await tx.run("UPDATE settings SET value = CAST(CAST(value AS NUMERIC) - ? AS TEXT) WHERE key = 'admin_balance'", actualReward);
+      // Credit referrer bonus (ad_ref_reward) — only if referred user has non-critical karma
+      const executor = await tx.get('SELECT referred_by FROM users WHERE id = ?', userId);
+      let actualCommission = parseFloat(task.reward) - userReward; // everything left is commission
+
+      if (executor && executor.referred_by && refReward > 0 && karma >= 20) {
+        await tx.run(`
+          UPDATE users SET 
+            balance = balance + ?,
+            total_earned = total_earned + ?,
+            updated_at = NOW()
+          WHERE id = ?
+        `, refReward, refReward, executor.referred_by);
+        actualCommission = parseFloat(task.reward) - userReward - refReward;
+      }
+
+      // Deduct full task price from admin balance
+      await tx.run("UPDATE settings SET value = CAST(CAST(value AS NUMERIC) - ? AS TEXT) WHERE key = 'admin_balance'", parseFloat(task.reward));
+
+      // Add commission back to admin balance
+      const totalCommission = actualCommission + (karmaModifier < 0 ? karmaAdjust : -karmaAdjust);
+      if (totalCommission > 0) {
+        await tx.run("UPDATE settings SET value = CAST(CAST(value AS NUMERIC) + ? AS TEXT) WHERE key = 'admin_balance'", totalCommission);
+      }
 
       // Update task completion count
       await tx.run('UPDATE tasks SET current_completions = current_completions + 1 WHERE id = ?', taskId);
 
       // Schedule subscription check for subscribe_channel tasks
       if (task.type === 'subscribe_channel' && task.target_id) {
-        const checkHoursRow = await tx.get("SELECT value FROM settings WHERE key = 'sub_check_hours'");
-        const checkHours = parseInt(checkHoursRow?.value) || 72;
+        const checkHours = ps.sub_check_hours || 72;
         await tx.run(
           `INSERT INTO subscription_checks (user_id, task_id, task_type, channel_id, completed_at, check_after)
            VALUES (?, ?, 'admin', ?, NOW(), NOW() + INTERVAL '1 hour' * ?)`,
@@ -181,13 +207,13 @@ router.post('/:id/complete', async (req, res) => {
       // Get updated user
       const userAfter = await tx.get('SELECT balance, total_earned, tasks_completed, karma FROM users WHERE id = ?', userId);
 
-      // +1 karma every 10 tasks (cap at 50) — inside transaction to avoid race condition
+      // +1 karma every 10 tasks (cap at 100) — inside transaction to avoid race condition
       if (userAfter.tasks_completed > 0 && userAfter.tasks_completed % 10 === 0) {
         await tx.run("UPDATE users SET karma = LEAST(100, COALESCE(karma, 50) + 1) WHERE id = ?", userId);
         userAfter.karma = Math.min(100, (userAfter.karma || 50) + 1);
       }
 
-      userAfter._actualReward = actualReward;
+      userAfter._actualReward = actualUserReward;
       return userAfter;
     });
 
