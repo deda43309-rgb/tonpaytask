@@ -189,7 +189,7 @@ router.post('/tasks', async (req, res) => {
     const ps = {};
     pricingRows.forEach(r => { ps[r.key] = parseFloat(r.value); });
     const adPrice = ps.ad_price || 20;
-    const reward = ps.ad_user_reward || 10;
+    const reward = adPrice; // store full price as reward for commission calculation
 
     // Validation
     if (!title || !url || !type || !max_completions) {

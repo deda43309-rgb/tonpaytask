@@ -362,6 +362,19 @@ async function initTables() {
   }
 
   console.log('✅ Database tables initialized');
+
+  // Fix existing ad_tasks: reward should be ad_price, not ad_user_reward
+  try {
+    const adPriceRow = await db.get("SELECT value FROM settings WHERE key = 'ad_price'");
+    const adPrice = parseFloat(adPriceRow?.value) || 20;
+    const adUserReward = await db.get("SELECT value FROM settings WHERE key = 'ad_user_reward'");
+    const userReward = parseFloat(adUserReward?.value) || 10;
+    // Only fix tasks where reward equals ad_user_reward (incorrectly set)
+    await db.run(
+      "UPDATE ad_tasks SET reward = ? WHERE reward = ? AND status IN ('active', 'paused')",
+      adPrice, userReward
+    );
+  } catch(e) {}
 }
 
 function generateReferralCode() {
