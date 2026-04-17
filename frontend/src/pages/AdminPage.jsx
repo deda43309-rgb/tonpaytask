@@ -873,16 +873,7 @@ export default function AdminPage({ user }) {
               />
             </div>
 
-            <div className="form-row">
-              <div className="form-group" style={{ flex: 1 }}>
-                <label className="form-label">Иконка</label>
-                <input
-                  className="input"
-                  value={taskForm.icon}
-                  onChange={e => setTaskForm({ ...taskForm, icon: e.target.value })}
-                />
-              </div>
-            </div>
+
 
             <div className="form-group">
               <label className="form-label">URL (ссылка на канал/бота/сайт)</label>
@@ -941,10 +932,12 @@ export default function AdminPage({ user }) {
                   </button>
                 ))}
               </div>
-              {taskForm.max_completions > 0 && taskForm.reward > 0 && (
+              {taskForm.max_completions > 0 && (
                 <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
-                  💰 Стоимость: <b style={{ color: 'var(--accent-primary)' }}>{formatTON(taskForm.reward * taskForm.max_completions)} TON</b>
-                  {' '}({taskForm.max_completions} × {formatTON(taskForm.reward)})
+                  💰 Бюджет: <b style={{ color: 'var(--accent-primary)' }}>{formatTON(parseFloat(settings.ad_price || 0.002) * taskForm.max_completions)} TON</b>
+                  {' '}({taskForm.max_completions} × {formatTON(settings.ad_price || 0.002)})
+                  <br/>
+                  🎯 Награда юзеру: {formatTON(settings.ad_user_reward || 0.001)} · 👥 Рефералу: {formatTON(settings.ad_ref_reward || 0)} · 🏦 Комиссия: {formatTON(settings.ad_commission || 0)}
                 </div>
               )}
             </div>
