@@ -182,7 +182,11 @@ async function initTables() {
     'ALTER TABLE subscription_checks ALTER COLUMN penalty_applied TYPE NUMERIC USING penalty_applied::NUMERIC',
   ];
   for (const m of migrations) {
-    try { await db.exec(m); } catch(e) {}
+    try { await db.exec(m); } catch(e) {
+      if (!e.message?.includes('already') && !e.message?.includes('type')) {
+        console.warn('⚠️ Migration warning:', m.substring(0, 60), '—', e.message);
+      }
+    }
   }
 
   // Add karma column
@@ -386,4 +390,12 @@ function generateReferralCode() {
   return code;
 }
 
-module.exports = { initDatabase, getDb, generateReferralCode };
+async function closePool() {
+  if (pool) {
+    await pool.end();
+    pool = null;
+    db = null;
+  }
+}
+
+module.exports = { initDatabase, getDb, generateReferralCode, closePool };

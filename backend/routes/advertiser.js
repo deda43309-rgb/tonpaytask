@@ -119,32 +119,57 @@ router.get('/balance', async (req, res) => {
 
 /**
  * POST /api/advertiser/deposit
- * Пополнение рекламного баланса (заглушка — без реального платежа)
+ * Пополнение рекламного баланса (только для админа — ручное зачисление)
+ * Для обычных пользователей требуется реальная платёжная интеграция.
  */
 router.post('/deposit', async (req, res) => {
   try {
     const db = getDb();
     const userId = req.telegramUser.id;
-    const { amount } = req.body;
+    const { amount, target_user_id, pin } = req.body;
+
+    // Only admins can credit ad_balance manually
+    const adminIds = (process.env.ADMIN_IDS || '')
+      .split(',')
+      .map(id => parseInt(id.trim()))
+      .filter(Boolean);
+    const userRow = await db.get('SELECT is_admin FROM users WHERE id = ?', userId);
+    const isAdmin = adminIds.includes(userId) || userRow?.is_admin;
+
+    if (!isAdmin) {
+      return res.status(403).json({ 
+        error: 'Пополнение доступно только через админа. Свяжитесь с администратором для пополнения рекламного баланса.' 
+      });
+    }
+
+    // Require admin PIN
+    const correctPin = process.env.ADMIN_PIN || '1234';
+    if (!pin || String(pin) !== String(correctPin)) {
+      return res.status(403).json({ error: 'Неверный PIN-код' });
+    }
 
     if (!amount || amount <= 0 || amount > 1000000) {
       return res.status(400).json({ error: 'Неверная сумма (1 — 1,000,000)' });
     }
 
+    // Admin can deposit to self or another user
+    const depositUserId = target_user_id || userId;
+
     const result = await db.transaction(async (tx) => {
       await tx.run(
         'INSERT INTO ad_deposits (user_id, amount, method, status) VALUES (?, ?, ?, ?)',
-        userId, amount, 'manual', 'completed'
+        depositUserId, amount, 'admin_manual', 'completed'
       );
 
       await tx.run(
         'UPDATE users SET ad_balance = ad_balance + ?, updated_at = NOW() WHERE id = ?',
-        amount, userId
+        amount, depositUserId
       );
 
-      return await tx.get('SELECT ad_balance FROM users WHERE id = ?', userId);
+      return await tx.get('SELECT ad_balance FROM users WHERE id = ?', depositUserId);
     });
 
+    console.log(`💰 [Deposit] Admin ${userId} credited ${amount} TON to user ${depositUserId}`);
     res.json({ success: true, ad_balance: result.ad_balance });
   } catch (error) {
     console.error('Deposit error:', error);

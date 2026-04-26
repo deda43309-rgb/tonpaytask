@@ -35,7 +35,7 @@ function initBot(token) {
           const referrerCode = startParam.replace('ref_', '');
           const referrer = await db.get('SELECT * FROM users WHERE referral_code = ?', referrerCode);
 
-          if (referrer && referrer.id !== BigInt(userId) && referrer.id != userId) {
+          if (referrer && Number(referrer.id) !== Number(userId)) {
             // Only save referral link — bonus is paid on first activity
             await db.run('UPDATE users SET referred_by = ? WHERE id = ?', referrer.id, userId);
             await db.run(

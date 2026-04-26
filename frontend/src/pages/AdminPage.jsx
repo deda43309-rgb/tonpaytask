@@ -22,6 +22,7 @@ export default function AdminPage({ user }) {
   const [resolving, setResolving] = useState(false);
   const [resolved, setResolved] = useState(null);
   const [userSort, setUserSort] = useState('date');
+  const [taskFilter, setTaskFilter] = useState('all');
   const resolveTimer = useRef(null);
 
   // Task form state
@@ -293,8 +294,6 @@ export default function AdminPage({ user }) {
 
           {/* Tasks Tab */}
           {tab === 'tasks' && (() => {
-            const taskFilter = window._adminTaskFilter || 'all';
-            const setTaskFilter = (f) => { window._adminTaskFilter = f; setTasks([...tasks]); };
             const filtered = taskFilter === 'all' ? tasks 
               : taskFilter === 'admin' ? tasks.filter(t => t.source === 'admin')
               : tasks.filter(t => t.source === 'ad');

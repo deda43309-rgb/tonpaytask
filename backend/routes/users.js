@@ -157,15 +157,13 @@ router.get('/referrals', async (req, res) => {
       userId
     );
 
-    // Per-referral task earnings
+    // Per-referral task earnings — single query instead of N+1
+    // Note: ref_reward transactions have user_id = referrer_id (the current user)
+    // We attribute all ref earnings to the referrer since we can't distinguish per-referral
+    const totalRefEarnings = parseFloat(taskEarnings.total) || 0;
+    const earningsPerRef = referrals.length > 0 ? totalRefEarnings / referrals.length : 0;
     for (const ref of referrals) {
-      const refTaskEarn = await db.get(
-        `SELECT COALESCE(SUM(CAST(at2.amount AS NUMERIC)), 0) as total
-         FROM ad_transactions at2
-         WHERE at2.user_id = ? AND at2.type = 'ref_reward'`,
-        userId
-      );
-      ref.task_earnings = parseFloat(refTaskEarn?.total) || 0;
+      ref.task_earnings = Math.round(earningsPerRef * 100000) / 100000;
     }
 
     const bonusRow = await db.get("SELECT value FROM settings WHERE key = 'referral_bonus'");
