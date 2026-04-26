@@ -19,6 +19,7 @@ export default function TasksPage({ user, onUserUpdate }) {
   const [toast, setToast] = useState(null);
   const [penalty, setPenalty] = useState(0);
   const [subCheckHours, setSubCheckHours] = useState(72);
+  const [disabledTypes, setDisabledTypes] = useState([]);
 
   useEffect(() => {
     loadTasks();
@@ -30,6 +31,7 @@ export default function TasksPage({ user, onUserUpdate }) {
       setTasks(data.tasks);
       setPenalty(data.unsub_penalty || 0);
       setSubCheckHours(data.sub_check_hours || 72);
+      setDisabledTypes(data.disabled_types || []);
     } catch (err) {
       console.error('Failed to load tasks:', err);
     } finally {
@@ -89,7 +91,7 @@ export default function TasksPage({ user, onUserUpdate }) {
 
       {/* Filters */}
       <div className="filter-tabs">
-        {filterOptions.map(opt => (
+        {filterOptions.filter(opt => opt.key === 'all' || !disabledTypes.includes(opt.key)).map(opt => (
           <button
             key={opt.key}
             className={`filter-tab ${filter === opt.key ? 'active' : ''}`}

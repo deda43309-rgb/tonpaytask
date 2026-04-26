@@ -61,7 +61,14 @@ router.get('/', async (req, res) => {
     const checkHoursRow = await db.get("SELECT value FROM settings WHERE key = 'sub_check_hours'");
     const sub_check_hours = parseFloat(checkHoursRow?.value) || 72;
 
-    res.json({ tasks: [...tasks, ...adTasks], unsub_penalty, sub_check_hours });
+    // Filter by enabled task sub-modules
+    const subModules = await db.all("SELECT key, value FROM settings WHERE key LIKE 'module_tasks_%'");
+    const typeMap = { module_tasks_subscribe: 'subscribe_channel', module_tasks_bot: 'start_bot', module_tasks_link: 'visit_link' };
+    const disabledTypes = subModules.filter(r => r.value === '0').map(r => typeMap[r.key]).filter(Boolean);
+    
+    const allTasks = [...tasks, ...adTasks].filter(t => !disabledTypes.includes(t.type));
+
+    res.json({ tasks: allTasks, unsub_penalty, sub_check_hours, disabled_types: disabledTypes });
   } catch (error) {
     console.error('Get tasks error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });

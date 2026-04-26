@@ -987,7 +987,29 @@ function ModulesEditor({ showToastMsg }) {
 
               {exp && mod.key === 'tasks' && (
                 <div style={{ padding: 16, background: 'var(--bg-glass)', border: '1px solid ' + (on ? 'rgba(52,199,89,0.2)' : 'var(--border)'), borderTop: 'none', borderRadius: '0 0 14px 14px' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12, color: 'var(--accent-primary)' }}>{'\ud83d\udce2 \u0426\u0435\u043d\u043e\u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435'}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, color: 'var(--accent-primary)' }}>{'📋 Типы заданий'}</div>
+                  {[
+                    { k: 'module_tasks_subscribe', icon: '🔔', label: 'Подписки на каналы' },
+                    { k: 'module_tasks_bot', icon: '🤖', label: 'Запуск ботов' },
+                    { k: 'module_tasks_link', icon: '🔗', label: 'Посещение ссылок' },
+                  ].map(sub => {
+                    const subOn = mSettings[sub.k] !== '0' && mSettings[sub.k] !== 0;
+                    return (
+                      <div key={sub.k} onClick={() => setMSettings(s => ({...s, [sub.k]: subOn ? '0' : '1'}))}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, marginBottom: 6, cursor: 'pointer', background: subOn ? 'rgba(52,199,89,0.08)' : 'rgba(120,120,128,0.08)', border: '1px solid ' + (subOn ? 'rgba(52,199,89,0.15)' : 'transparent'), transition: 'all 0.2s' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 16 }}>{sub.icon}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600 }}>{sub.label}</span>
+                        </div>
+                        <Sw on={subOn} />
+                      </div>
+                    );
+                  })}
+                  <button className="btn btn-primary btn-block" style={{ marginTop: 6, marginBottom: 16 }} disabled={savingS}
+                    onClick={() => saveSettings(['module_tasks_subscribe','module_tasks_bot','module_tasks_link'], 'Типы заданий сохранены')}>
+                    {savingS ? '⏳...' : '💾 Сохранить типы'}
+                  </button>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12, color: 'var(--accent-primary)' }}>{'📢 Ценообразование'}</div>
                   <Inp label={'\ud83d\udcb0 \u0426\u0435\u043d\u0430 \u0434\u043b\u044f \u0440\u0435\u043a\u043b\u0430\u043c\u043e\u0434\u0430\u0442\u0435\u043b\u044f'} val={mSettings.ad_price} set={v => setMSettings(s => ({...s, ad_price: v}))} />
                   <Inp label={'\ud83c\udfaf \u041d\u0430\u0433\u0440\u0430\u0434\u0430 \u0438\u0441\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044e'} val={mSettings.ad_user_reward} set={v => setMSettings(s => ({...s, ad_user_reward: v}))} />
                   <Inp label={'\ud83d\udc65 \u0420\u0435\u0444\u0435\u0440\u0430\u043b\u044c\u043d\u0430\u044f \u043d\u0430\u0433\u0440\u0430\u0434\u0430'} val={mSettings.ad_ref_reward} set={v => setMSettings(s => ({...s, ad_ref_reward: v}))} />
