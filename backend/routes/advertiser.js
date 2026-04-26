@@ -418,8 +418,15 @@ router.post('/tasks', async (req, res) => {
           `📌 <b>${title}</b>\n` +
           `${typeLabel} · ${max_completions} вып.\n` +
           `🔗 ${url}\n` +
-          `💰 Цена: ${totalCost} TON\n\n` +
-          `Откройте панель админа → Модерация`
+          `💰 Цена: ${totalCost} TON`,
+          {
+            reply_markup: {
+              inline_keyboard: [[
+                { text: '✅ Одобрить', callback_data: `mod_approve_${result.task.id}` },
+                { text: '❌ Отклонить', callback_data: `mod_reject_${result.task.id}` }
+              ]]
+            }
+          }
         );
       } catch(e) { console.error('Notify error:', e); }
 

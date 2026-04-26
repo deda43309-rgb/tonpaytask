@@ -124,6 +124,48 @@ function initBot(token) {
     }
   });
 
+  // Handle moderation callback buttons
+  bot.on('callback_query', async (query) => {
+    const data = query.data;
+    if (!data.startsWith('mod_')) return;
+
+    const [action, taskId] = data.split('_').slice(0);
+    const id = parseInt(data.split('_')[2]);
+    const isApprove = data.startsWith('mod_approve_');
+
+    try {
+      const db = getDb();
+      const task = await db.get("SELECT * FROM ad_tasks WHERE id = ? AND status = 'pending_review'", id);
+      
+      if (!task) {
+        return bot.answerCallbackQuery(query.id, { text: '❌ Задание не найдено или уже обработано' });
+      }
+
+      if (isApprove) {
+        await db.run("UPDATE ad_tasks SET status = 'active' WHERE id = ?", id);
+        bot.answerCallbackQuery(query.id, { text: '✅ Задание одобрено!' });
+        bot.editMessageText(
+          query.message.text + '\n\n✅ <b>ОДОБРЕНО</b>',
+          { chat_id: query.message.chat.id, message_id: query.message.message_id, parse_mode: 'HTML' }
+        ).catch(() => {});
+        console.log(`✅ [Moderation Bot] Approved task #${id}`);
+      } else {
+        const refund = task.reward * task.max_completions;
+        await db.run("UPDATE ad_tasks SET status = 'rejected' WHERE id = ?", id);
+        await db.run("UPDATE users SET ad_balance = ad_balance + ? WHERE id = ?", refund, task.advertiser_id);
+        bot.answerCallbackQuery(query.id, { text: `❌ Отклонено, возврат ${refund} TON` });
+        bot.editMessageText(
+          query.message.text + `\n\n❌ <b>ОТКЛОНЕНО</b> (возврат ${refund} TON)`,
+          { chat_id: query.message.chat.id, message_id: query.message.message_id, parse_mode: 'HTML' }
+        ).catch(() => {});
+        console.log(`❌ [Moderation Bot] Rejected task #${id}, refund ${refund}`);
+      }
+    } catch (e) {
+      console.error('Moderation callback error:', e);
+      bot.answerCallbackQuery(query.id, { text: '⚠️ Ошибка: ' + e.message });
+    }
+  });
+
   // Handle polling errors to prevent crashes
   bot.on('polling_error', (error) => {
     console.error('🤖 Bot polling error:', error.code, error.message);
@@ -140,7 +182,7 @@ function getBot() {
 /**
  * Send a notification to all admins
  */
-function notifyAdmins(text) {
+function notifyAdmins(text, options = {}) {
   if (!bot) return;
   const adminIds = (process.env.ADMIN_IDS || '')
     .split(',')
@@ -149,10 +191,11 @@ function notifyAdmins(text) {
   
   for (const adminId of adminIds) {
     console.log(`[Notify] Sending to admin ${adminId}`);
-    bot.sendMessage(adminId, text, { parse_mode: 'HTML' }).catch(e => {
+    bot.sendMessage(adminId, text, { parse_mode: 'HTML', ...options }).catch(e => {
       console.error(`Failed to notify admin ${adminId}:`, e.message);
     });
   }
 }
 
 module.exports = { initBot, getBot, notifyAdmins };
+
