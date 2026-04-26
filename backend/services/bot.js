@@ -20,8 +20,8 @@ function initBot(token) {
       if (!user) {
         const refCode = generateReferralCode();
         await db.run(
-          `INSERT INTO users (id, username, first_name, last_name, referral_code, karma)
-           VALUES (?, ?, ?, ?, ?, 50)`,
+          `INSERT INTO users (id, username, first_name, last_name, referral_code)
+           VALUES (?, ?, ?, ?, ?)`,
           userId,
           msg.from.username || '',
           msg.from.first_name || '',

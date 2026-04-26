@@ -1,13 +1,8 @@
-import { useNavigate } from 'react-router-dom';
 import { formatTON } from '../utils/format';
 import './TopBar.css';
 
 export default function TopBar({ user }) {
-  const navigate = useNavigate();
   if (!user) return null;
-
-  const karma = user.karma ?? 50;
-  const karmaColor = karma >= 80 ? '#34c759' : karma >= 50 ? '#ff9500' : karma >= 20 ? '#ff6b00' : '#ff3b30';
 
   return (
     <div className="topbar">
@@ -16,11 +11,6 @@ export default function TopBar({ user }) {
         <span className="topbar-name">TonPayTask</span>
       </div>
       <div className="topbar-right">
-        <div className="topbar-item" onClick={() => navigate('/karma')} style={{ cursor: 'pointer' }}>
-          <span className="topbar-item-icon">☯️</span>
-          <span className="topbar-item-value" style={{ color: karmaColor }}>{karma}</span>
-        </div>
-        <div className="topbar-sep" />
         <div className="topbar-item topbar-balance">
           <span className="topbar-item-icon">💰</span>
           <span className="topbar-item-value">{formatTON(user.balance || 0)}</span>

@@ -382,7 +382,6 @@ export default function AdminPage({ user }) {
                 {[
                   { key: 'date', label: '📅 Дата' },
                   { key: 'balance', label: '💎 Баланс' },
-                  { key: 'karma', label: '☯️ Карма' },
                   { key: 'earned', label: '💰 Доход' },
                   { key: 'penalties', label: '⚠️ Штрафы' },
                   { key: 'ad_balance', label: '📢 Рекл.' },
@@ -403,13 +402,6 @@ export default function AdminPage({ user }) {
               </div>
 
               {users.map(u => {
-                const karma = u.karma ?? 50;
-                const karmaColor = karma >= 50 ? '#34c759' : karma >= 20 ? '#ff9500' : '#ff3b30';
-                const avatarGrad = karma >= 50
-                  ? 'linear-gradient(135deg, #34c759, #30d158)'
-                  : karma >= 20
-                    ? 'linear-gradient(135deg, #ff9500, #ffb340)'
-                    : 'linear-gradient(135deg, #ff3b30, #ff6961)';
                 return (
                 <div key={u.id} style={{
                   background: 'var(--bg-card)',
@@ -429,17 +421,15 @@ export default function AdminPage({ user }) {
                         style={{
                           width: 44, height: 44, borderRadius: 14, flexShrink: 0,
                           objectFit: 'cover',
-                          border: `2px solid ${karmaColor}40`,
-                          boxShadow: `0 4px 12px ${karmaColor}22`,
+                          border: '2px solid var(--border)',
                         }}
                       />
                     ) : (
                       <div style={{
                         width: 44, height: 44, borderRadius: 14, flexShrink: 0,
-                        background: avatarGrad,
+                        background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 18, fontWeight: 800, color: '#fff',
-                        boxShadow: `0 4px 12px ${karmaColor}33`,
                       }}>
                         {(u.first_name || u.username || '?')[0].toUpperCase()}
                       </div>
@@ -458,14 +448,6 @@ export default function AdminPage({ user }) {
                         <span>📅 {new Date(u.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
                         <span>🕐 {new Date(u.updated_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })} {new Date(u.updated_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
-                    </div>
-                    <div style={{
-                      padding: '4px 10px', borderRadius: 8,
-                      background: `${karmaColor}18`, border: `1px solid ${karmaColor}30`,
-                      textAlign: 'center',
-                    }}>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: karmaColor, lineHeight: 1 }}>{karma}</div>
-                      <div style={{ fontSize: 8, color: karmaColor, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>карма</div>
                     </div>
                   </div>
 
@@ -912,79 +894,6 @@ export default function AdminPage({ user }) {
                     🔍 Проверить сейчас
                   </button>
                 </div>
-              </div>
-
-              <div className="card" style={{ padding: 20 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>☯️ Модификаторы кармы (%)</h3>
-                
-                <div className="form-group">
-                  <label className="form-label">🌟 Бонус за высокую карму (80-100)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={settings.karma_bonus_high ?? '5'}
-                    onChange={e => setSettings(s => ({ ...s, karma_bonus_high: e.target.value }))}
-                  />
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    +{settings.karma_bonus_high || 5}% к награде из системного баланса
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">⚠️ Штраф за низкую карму (20-49)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={settings.karma_penalty_low ?? '10'}
-                    onChange={e => setSettings(s => ({ ...s, karma_penalty_low: e.target.value }))}
-                  />
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    -{settings.karma_penalty_low || 10}% от награды в системный баланс
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">🚫 Штраф за критическую карму (0-19)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={settings.karma_penalty_critical ?? '15'}
-                    onChange={e => setSettings(s => ({ ...s, karma_penalty_critical: e.target.value }))}
-                  />
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    -{settings.karma_penalty_critical || 15}% от награды в системный баланс
-                  </div>
-                </div>
-
-                <button
-                  className="btn btn-primary btn-block"
-                  disabled={savingSettings}
-                  onClick={async () => {
-                    setSavingSettings(true);
-                    try {
-                      const res = await api.updateAdminSettings({
-                        karma_bonus_high: settings.karma_bonus_high,
-                        karma_penalty_low: settings.karma_penalty_low,
-                        karma_penalty_critical: settings.karma_penalty_critical,
-                      });
-                      setSettings(res.settings);
-                      showToastMsg('Настройки кармы сохранены ✅');
-                      hapticFeedback('success');
-                    } catch (err) {
-                      showToastMsg(err.message, 'error');
-                    } finally {
-                      setSavingSettings(false);
-                    }
-                  }}
-                >
-                  {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
-                </button>
               </div>
 
               <div className="card" style={{ padding: 20, border: '1px solid rgba(239,68,68,0.3)' }}>

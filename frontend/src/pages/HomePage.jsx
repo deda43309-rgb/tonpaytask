@@ -44,9 +44,6 @@ export default function HomePage({ user, onUserUpdate }) {
     }
   };
 
-  const karma = user?.karma ?? 50;
-  const karmaColor = karma >= 80 ? '#34c759' : karma >= 50 ? '#ff9500' : karma >= 20 ? '#ff6b00' : '#ff3b30';
-  const karmaLabel = karma >= 80 ? '🌟 Отличная' : karma >= 50 ? '⚡ Нормальная' : karma >= 20 ? '⚠️ Низкая' : '🚫 Критическая';
 
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -103,26 +100,6 @@ export default function HomePage({ user, onUserUpdate }) {
           <div style={{ flex: 1, textAlign: 'center', padding: '6px 0', borderRadius: 10, background: 'var(--bg-glass)' }}>
             <div style={{ fontSize: 15, fontWeight: 800 }}>{user?.referral_count || 0}</div>
             <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>Рефералов</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Karma */}
-      <div className="card mt-12 animate-slide" style={{ padding: '12px 16px', cursor: 'pointer', animationDelay: '100ms' }} onClick={() => navigate('/karma')}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 22 }}>☯️</span>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>Карма</div>
-              <div style={{ fontSize: 11, color: karmaColor, fontWeight: 600 }}>{karmaLabel}</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: karmaColor }}>{karma}</div>
-              <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>из 100</div>
-            </div>
-            <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>›</span>
           </div>
         </div>
       </div>
@@ -255,18 +232,6 @@ export default function HomePage({ user, onUserUpdate }) {
           >
             <span className="profile-menu-icon">📢</span>
             <span className="profile-menu-label">Рекламодатель</span>
-            <span className="profile-menu-arrow">›</span>
-          </button>
-
-          <div className="profile-menu-divider" />
-
-          <button
-            className="profile-menu-item"
-            onClick={() => { hapticFeedback('light'); navigate('/karma'); }}
-            id="menu-karma"
-          >
-            <span className="profile-menu-icon">☯️</span>
-            <span className="profile-menu-label">Система кармы</span>
             <span className="profile-menu-arrow">›</span>
           </button>
 

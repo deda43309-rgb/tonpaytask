@@ -10,7 +10,6 @@ import ReferralPage from './pages/ReferralPage';
 import AdminPage from './pages/AdminPage';
 import AdvertiserPage from './pages/AdvertiserPage';
 import CompletionsPage from './pages/CompletionsPage';
-import KarmaPage from './pages/KarmaPage';
 import DepositPage from './pages/DepositPage';
 import { getStartParam, expandApp, setHeaderColor, setBackgroundColor, getInitData } from './utils/telegram';
 import * as api from './utils/api';
@@ -94,7 +93,7 @@ export default function App() {
             Обратитесь к администратору для разблокировки.
           </p>
           <div style={{ marginTop: 16, padding: '8px 16px', borderRadius: 10, background: 'rgba(255,59,48,0.1)', color: '#ff3b30', fontSize: 12, fontWeight: 600 }}>
-            Карма: {user.karma ?? 0} · Баланс: {user.balance}
+            Баланс: {user.balance}
           </div>
         </div>
       </>
@@ -114,7 +113,6 @@ export default function App() {
           <Route path="/admin" element={<AdminPage user={user} />} />
           <Route path="/advertiser" element={<AdvertiserPage user={user} />} />
           <Route path="/completions" element={<CompletionsPage />} />
-          <Route path="/karma" element={<KarmaPage user={user} />} />
           <Route path="/deposit" element={<DepositPage user={user} onUserUpdate={handleUserUpdate} />} />
         </Routes>
         </div>
