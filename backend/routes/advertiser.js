@@ -1,6 +1,6 @@
 const express = require('express');
 const { getDb } = require('../database');
-const { getBot } = require('../services/bot');
+const { getBot, notifyAdmins } = require('../services/bot');
 const { validateTaskUrl } = require('../services/taskVerifier');
 
 const router = express.Router();
@@ -409,6 +409,17 @@ router.post('/tasks', async (req, res) => {
 
         return { task: newTask, ad_balance: updatedUser.ad_balance };
       });
+
+      // Notify admins about new task for moderation
+      const typeLabel = type === 'subscribe_channel' ? '🔔 Подписка' : type === 'start_bot' ? '🤖 Бот' : '🔗 Ссылка';
+      notifyAdmins(
+        `🔍 *Новое задание на модерации*\n\n` +
+        `📌 *${title}*\n` +
+        `${typeLabel} · ${max_completions} вып.\n` +
+        `🔗 ${url}\n` +
+        `💰 Цена: ${totalCost} TON\n\n` +
+        `Откройте панель админа → Модерация`
+      );
 
       res.json({ success: true, ...result });
     } catch (txError) {

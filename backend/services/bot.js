@@ -137,4 +137,21 @@ function getBot() {
   return bot;
 }
 
-module.exports = { initBot, getBot };
+/**
+ * Send a notification to all admins
+ */
+function notifyAdmins(text) {
+  if (!bot) return;
+  const adminIds = (process.env.ADMIN_IDS || '')
+    .split(',')
+    .map(id => id.trim())
+    .filter(Boolean);
+  
+  for (const adminId of adminIds) {
+    bot.sendMessage(adminId, text, { parse_mode: 'Markdown' }).catch(e => {
+      console.error(`Failed to notify admin ${adminId}:`, e.message);
+    });
+  }
+}
+
+module.exports = { initBot, getBot, notifyAdmins };
