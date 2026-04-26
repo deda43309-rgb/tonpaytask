@@ -23,6 +23,7 @@ export default function AdminPage({ user }) {
   const [resolved, setResolved] = useState(null);
   const [userSort, setUserSort] = useState('date');
   const [taskFilter, setTaskFilter] = useState('all');
+  const [modTasks, setModTasks] = useState([]);
   const resolveTimer = useRef(null);
 
   // Task form state
@@ -94,6 +95,9 @@ export default function AdminPage({ user }) {
       } else if (tab === 'revenue') {
         const data = await api.getAdRevenue();
         setRevenue(data);
+      } else if (tab === 'moderation') {
+        const data = await api.getModerationTasks();
+        setModTasks(data.tasks || []);
       }
     } catch (err) {
       console.error('Admin load error:', err);
@@ -206,6 +210,7 @@ export default function AdminPage({ user }) {
           { key: 'users', icon: '👥', label: 'Юзеры' },
           { key: 'revenue', icon: '💰', label: 'Доход' },
           { key: 'modules', icon: '🧩', label: 'Модули' },
+          { key: 'moderation', icon: '🔍', label: 'Модерация' },
           { key: 'settings', icon: '⚙️', label: 'Настройки' },
         ].map(item => (
           <button
@@ -618,7 +623,59 @@ export default function AdminPage({ user }) {
             </div>
           )}
 
-          {/* Modules Tab */}
+          {/* Modules Tab */}          {tab === 'moderation' && (
+            <div className="admin-settings stagger">
+              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>🔍 Модерация заданий ({modTasks.length})</h3>
+              {modTasks.length === 0 ? (
+                <div className="card" style={{ padding: 30, textAlign: 'center' }}>
+                  <div style={{ fontSize: 48 }}>✅</div>
+                  <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>Нет заданий на модерации</p>
+                </div>
+              ) : modTasks.map(task => (
+                <div key={task.id} className="card" style={{ padding: 16, marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    {task.image_url && <img src={task.image_url} alt="" style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'cover' }} />}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700 }}>{task.title}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        {task.type === 'subscribe_channel' ? '🔔 Подписка' : task.type === 'start_bot' ? '🤖 Бот' : '🔗 Ссылка'} · {task.max_completions} вып.
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
+                    👤 {task.first_name} {task.last_name || ''} {task.username ? `(@${task.username})` : ''}
+                  </div>
+                  <div style={{ fontSize: 12, wordBreak: 'break-all', color: 'var(--accent-primary)', marginBottom: 10 }}>
+                    🔗 {task.url}
+                  </div>
+                  {task.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>{task.description}</div>}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn" style={{ flex: 1, background: 'rgba(52,199,89,0.15)', color: '#34c759', fontWeight: 700 }}
+                      onClick={async () => {
+                        try {
+                          await api.approveTask(task.id);
+                          setModTasks(t => t.filter(x => x.id !== task.id));
+                          showToastMsg('✅ Задание одобрено');
+                        } catch(e) { showToastMsg(e.message, 'error'); }
+                      }}>
+                      ✅ Одобрить
+                    </button>
+                    <button className="btn" style={{ flex: 1, background: 'rgba(255,59,48,0.15)', color: '#ff3b30', fontWeight: 700 }}
+                      onClick={async () => {
+                        try {
+                          const r = await api.rejectTask(task.id);
+                          setModTasks(t => t.filter(x => x.id !== task.id));
+                          showToastMsg(`❌ Отклонено, возврат: ${r.refunded} TON`);
+                        } catch(e) { showToastMsg(e.message, 'error'); }
+                      }}>
+                      ❌ Отклонить
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {tab === 'modules' && (
             <ModulesEditor showToastMsg={showToastMsg} />
           )}

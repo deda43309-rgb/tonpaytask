@@ -400,8 +400,8 @@ router.post('/tasks', async (req, res) => {
 
         // Create task
         const newTask = await tx.get(`
-          INSERT INTO ad_tasks (advertiser_id, title, description, url, type, reward, max_completions, image_url)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO ad_tasks (advertiser_id, title, description, url, type, reward, max_completions, image_url, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending_review')
           RETURNING *
         `, userId, title, description || '', url, type, reward, max_completions, image_url || null);
 

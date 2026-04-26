@@ -668,5 +668,68 @@ router.put('/modules', async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
+/**
+ * GET /api/admin/moderation
+ * List tasks pending moderation
+ */
+router.get('/moderation', async (req, res) => {
+  try {
+    const db = getDb();
+    const tasks = await db.all(`
+      SELECT at2.*, u.first_name, u.last_name, u.username 
+      FROM ad_tasks at2
+      JOIN users u ON u.id = at2.advertiser_id
+      WHERE at2.status = 'pending_review'
+      ORDER BY at2.created_at DESC
+    `);
+    res.json({ tasks });
+  } catch (error) {
+    console.error('Get moderation tasks error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+/**
+ * POST /api/admin/moderation/:id/approve
+ * Approve a task
+ */
+router.post('/moderation/:id/approve', async (req, res) => {
+  try {
+    const db = getDb();
+    const taskId = parseInt(req.params.id);
+    const task = await db.get("SELECT * FROM ad_tasks WHERE id = ? AND status = 'pending_review'", taskId);
+    if (!task) return res.status(404).json({ error: 'Задание не найдено' });
+
+    await db.run("UPDATE ad_tasks SET status = 'active' WHERE id = ?", taskId);
+    console.log(`✅ [Moderation] Approved task #${taskId}: ${task.title}`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Approve task error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+/**
+ * POST /api/admin/moderation/:id/reject
+ * Reject a task and refund advertiser
+ */
+router.post('/moderation/:id/reject', async (req, res) => {
+  try {
+    const db = getDb();
+    const taskId = parseInt(req.params.id);
+    const task = await db.get("SELECT * FROM ad_tasks WHERE id = ? AND status = 'pending_review'", taskId);
+    if (!task) return res.status(404).json({ error: 'Задание не найдено' });
+
+    // Refund: reward * max_completions
+    const refund = task.reward * task.max_completions;
+    await db.run("UPDATE ad_tasks SET status = 'rejected' WHERE id = ?", taskId);
+    await db.run("UPDATE users SET ad_balance = ad_balance + ? WHERE id = ?", refund, task.advertiser_id);
+    console.log(`❌ [Moderation] Rejected task #${taskId}: ${task.title}, refund ${refund} to user ${task.advertiser_id}`);
+    res.json({ success: true, refunded: refund });
+  } catch (error) {
+    console.error('Reject task error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
 
 module.exports = router;

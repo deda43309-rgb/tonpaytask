@@ -255,6 +255,8 @@ export default function AdvertiserPage({ user }) {
                             <span>{formatTON(task.reward)} TON/выполнение</span>
                             <span className={`adv-task-status ${task.status}`}>{
                               task.status === 'active' ? '🟢 Активно' :
+                              task.status === 'pending_review' ? '🔍 На модерации' :
+                              task.status === 'rejected' ? '❌ Отклонено' :
                               task.status === 'paused' ? '⏸ Пауза' : '✅ Завершено'
                             }</span>
                           </div>

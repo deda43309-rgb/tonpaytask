@@ -261,7 +261,7 @@ async function initTables() {
       reward INTEGER NOT NULL DEFAULT 0,
       max_completions INTEGER NOT NULL DEFAULT 100,
       current_completions INTEGER DEFAULT 0,
-      status TEXT DEFAULT 'active' CHECK(status IN ('active', 'paused', 'completed', 'deleted')),
+      status TEXT DEFAULT 'active' CHECK(status IN ('active', 'paused', 'completed', 'deleted', 'pending_review', 'rejected')),
       image_url TEXT DEFAULT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     );
@@ -366,6 +366,15 @@ async function initTables() {
       ALTER TABLE pending_deposits DROP CONSTRAINT IF EXISTS pending_deposits_status_check;
       ALTER TABLE pending_deposits ADD CONSTRAINT pending_deposits_status_check 
         CHECK(status IN ('pending', 'confirmed', 'expired', 'failed', 'cancelled'));
+    `);
+  } catch(e) { console.log('Migration note:', e.message); }
+
+  try {
+    // Add 'pending_review','rejected' to ad_tasks status constraint
+    await db.exec(`
+      ALTER TABLE ad_tasks DROP CONSTRAINT IF EXISTS ad_tasks_status_check;
+      ALTER TABLE ad_tasks ADD CONSTRAINT ad_tasks_status_check 
+        CHECK(status IN ('active', 'paused', 'completed', 'deleted', 'pending_review', 'rejected'));
     `);
   } catch(e) { console.log('Migration note:', e.message); }
 

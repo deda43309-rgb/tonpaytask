@@ -154,3 +154,8 @@ export const getModules = () => request('/users/modules');
 export const getAdminModules = () => request('/admin/modules');
 export const updateAdminModules = (modules) =>
   request('/admin/modules', { method: 'PUT', body: JSON.stringify({ modules }) });
+
+// Moderation
+export const getModerationTasks = () => request('/admin/moderation');
+export const approveTask = (id) => request(`/admin/moderation/${id}/approve`, { method: 'POST' });
+export const rejectTask = (id) => request(`/admin/moderation/${id}/reject`, { method: 'POST' });
