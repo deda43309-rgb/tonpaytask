@@ -368,7 +368,7 @@ router.get('/settings', async (req, res) => {
 router.put('/settings', async (req, res) => {
   try {
     const db = getDb();
-    const fields = ['ad_price', 'ad_user_reward', 'ad_ref_reward', 'ad_commission', 'sub_check_hours', 'unsub_penalty', 'unsub_check_interval', 'referral_bonus', 'daily_bonus'];
+    const fields = ['ad_price', 'ad_user_reward', 'ad_ref_reward', 'ad_commission', 'sub_check_hours', 'unsub_penalty', 'unsub_check_interval', 'referral_bonus', 'daily_bonus', 'min_deposit', 'module_tasks_subscribe', 'module_tasks_bot', 'module_tasks_link'];
 
     // If admin_balance is being changed, require PIN
     if (req.body.admin_balance !== undefined) {
