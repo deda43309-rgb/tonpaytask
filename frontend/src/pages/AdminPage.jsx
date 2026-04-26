@@ -626,9 +626,6 @@ export default function AdminPage({ user }) {
           {/* Settings Tab */}
           {tab === 'settings' && (
             <div className="admin-settings stagger">
-              {/* Wallet */}
-              <WalletEditor />
-
               <div className="card" style={{ padding: 20 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🏦 Баланс системы</h3>
                 <div className="form-group">
@@ -903,7 +900,7 @@ const MODULE_LIST = [
   { key: 'tasks', icon: '\ud83d\udccb', label: '\u0417\u0430\u0434\u0430\u043d\u0438\u044f', desc: '\u0420\u0430\u0437\u0434\u0435\u043b \u0437\u0430\u0434\u0430\u043d\u0438\u0439 \u0434\u043b\u044f \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439', hasSettings: true },
   { key: 'referral', icon: '\ud83d\udc65', label: '\u0420\u0435\u0444\u0435\u0440\u0430\u043b\u044b', desc: '\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f \u0434\u0440\u0443\u0437\u0435\u0439', hasSettings: true },
   { key: 'advertiser', icon: '\ud83d\udce2', label: '\u0420\u0435\u043a\u043b\u0430\u043c\u0430', desc: '\u0420\u0435\u043a\u043b\u0430\u043c\u043e\u0434\u0430\u0442\u0435\u043b\u044c\u0441\u0438\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442' },
-  { key: 'deposit', icon: '\ud83d\udc8e', label: '\u0414\u0435\u043f\u043e\u0437\u0438\u0442', desc: '\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u043f\u043e\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0431\u0430\u043b\u0430\u043d\u0441\u0430' },
+  { key: 'deposit', icon: '\ud83d\udc8e', label: '\u0414\u0435\u043f\u043e\u0437\u0438\u0442', desc: '\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u043f\u043e\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0431\u0430\u043b\u0430\u043d\u0441\u0430', hasSettings: true },
 ];
 
 function ModulesEditor({ showToastMsg }) {
@@ -1013,6 +1010,19 @@ function ModulesEditor({ showToastMsg }) {
                     <button className="btn" style={{ flex: 1, background: 'rgba(52,199,89,0.15)', color: '#34c759', border: '1px solid rgba(52,199,89,0.3)' }}
                       onClick={async () => { try { const r = await api.checkSubscriptions(); showToastMsg(r.message || '\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u2705'); hapticFeedback('success'); } catch(e) { showToastMsg(e.message, 'error'); } }}>
                       {'\ud83d\udd0d \u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {exp && mod.key === 'deposit' && (
+                <div style={{ padding: 16, background: 'var(--bg-glass)', border: '1px solid ' + (on ? 'rgba(52,199,89,0.2)' : 'var(--border)'), borderTop: 'none', borderRadius: '0 0 14px 14px' }}>
+                  <WalletEditor />
+                  <div style={{ marginTop: 12 }}>
+                    <Inp label={'\ud83d\udcb0 \u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0439 \u0434\u0435\u043f\u043e\u0437\u0438\u0442 (TON)'} val={mSettings.min_deposit} set={v => setMSettings(s => ({...s, min_deposit: v}))} hint={'\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u0430\u044f \u0441\u0443\u043c\u043c\u0430 \u043f\u043e\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f'} />
+                    <button className="btn btn-primary btn-block" style={{ marginTop: 8 }} disabled={savingS}
+                      onClick={() => saveSettings(['min_deposit'], '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0434\u0435\u043f\u043e\u0437\u0438\u0442\u0430 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b')}>
+                      {savingS ? '\u23f3...' : '\ud83d\udcbe \u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c'}
                     </button>
                   </div>
                 </div>

@@ -374,6 +374,7 @@ async function initTables() {
     ['module_referral', '1'],
     ['module_advertiser', '1'],
     ['module_deposit', '1'],
+    ['min_deposit', '0.1'],
   ];
   for (const [key, value] of defaults) {
     try {
