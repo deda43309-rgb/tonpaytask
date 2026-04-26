@@ -51,7 +51,7 @@ export default function DepositPage({ user, onUserUpdate }) {
   }, [deposit, step]);
 
   const handleCreate = async () => {
-    const a = parseFloat(amount);
+    const a = parseFloat(String(amount).replace(',', '.'));
     if (!a || a <= 0) { setError('Введите сумму'); return; }
     if (a < minDeposit) { setError(`Минимальный депозит: ${minDeposit} TON`); return; }
     setLoading(true);
