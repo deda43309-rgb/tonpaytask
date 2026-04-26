@@ -1,6 +1,7 @@
 const express = require('express');
 const { getDb } = require('../database');
 const { generateMemo, checkSingleDeposit } = require('../services/depositChecker');
+const { getProjectWallet } = require('../services/wallet');
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ router.post('/create', async (req, res) => {
       return res.json({
         success: true,
         deposit: existing,
-        wallet: process.env.PROJECT_WALLET || '',
+      wallet: await getProjectWallet(),
         message: 'У вас уже есть активный депозит',
       });
     }

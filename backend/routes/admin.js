@@ -582,4 +582,44 @@ router.get('/ad-revenue', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/wallet
+ * Get current project wallet address.
+ */
+router.get('/wallet', async (req, res) => {
+  try {
+    const db = getDb();
+    const row = await db.get("SELECT value FROM settings WHERE key = 'project_wallet'");
+    res.json({ wallet: row?.value || process.env.PROJECT_WALLET || '' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+/**
+ * PUT /api/admin/wallet
+ * Update project wallet address.
+ */
+router.put('/wallet', async (req, res) => {
+  try {
+    const db = getDb();
+    const { wallet } = req.body;
+
+    if (!wallet || wallet.length < 10) {
+      return res.status(400).json({ error: 'Некорректный адрес кошелька' });
+    }
+
+    await db.run(
+      "INSERT INTO settings (key, value) VALUES ('project_wallet', ?) ON CONFLICT (key) DO UPDATE SET value = ?",
+      wallet, wallet
+    );
+
+    console.log(`💰 [Admin] Wallet updated to: ${wallet}`);
+    res.json({ success: true, wallet });
+  } catch (error) {
+    console.error('Update wallet error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 module.exports = router;

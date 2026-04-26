@@ -1,4 +1,5 @@
 const { getDb } = require('../database');
+const { getProjectWallet } = require('./wallet');
 
 const TON_API_BASE = 'https://toncenter.com/api/v2';
 let checkInterval = null;
@@ -20,11 +21,11 @@ function generateMemo() {
  * Uses TonCenter API to scan recent transactions on the project wallet.
  */
 async function checkPendingDeposits() {
-  const wallet = process.env.PROJECT_WALLET;
+  const wallet = await getProjectWallet();
   const apiKey = process.env.TONCENTER_API_KEY || '';
 
   if (!wallet) {
-    return { checked: 0, confirmed: 0, expired: 0, error: 'PROJECT_WALLET not set' };
+    return { checked: 0, confirmed: 0, expired: 0, error: 'Wallet not set' };
   }
 
   const db = getDb();
@@ -137,10 +138,10 @@ async function checkSingleDeposit(depositId) {
     return { error: 'Deposit expired', status: 'expired' };
   }
 
-  const wallet = process.env.PROJECT_WALLET;
+  const wallet = await getProjectWallet();
   const apiKey = process.env.TONCENTER_API_KEY || '';
 
-  if (!wallet) return { error: 'PROJECT_WALLET not set' };
+  if (!wallet) return { error: 'Wallet not set' };
 
   try {
     const url = `${TON_API_BASE}/getTransactions?address=${encodeURIComponent(wallet)}&limit=100${apiKey ? '&api_key=' + apiKey : ''}`;

@@ -142,3 +142,7 @@ export const checkMainDeposit = (id) =>
 export const getDepositHistory = () =>
   request('/deposit/history');
 
+// Admin wallet
+export const getAdminWallet = () => request('/admin/wallet');
+export const updateAdminWallet = (wallet) =>
+  request('/admin/wallet', { method: 'PUT', body: JSON.stringify({ wallet }) });

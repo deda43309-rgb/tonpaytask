@@ -638,6 +638,9 @@ export default function AdminPage({ user }) {
           {/* Settings Tab */}
           {tab === 'settings' && (
             <div className="admin-settings stagger">
+              {/* Wallet */}
+              <WalletEditor />
+
               <div className="card" style={{ padding: 20 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🏦 Баланс системы</h3>
                 <div className="form-group">
@@ -1150,6 +1153,68 @@ export default function AdminPage({ user }) {
           {toast.message}
         </div>
       )}
+    </div>
+  );
+}
+
+function WalletEditor() {
+  const [wallet, setWallet] = useState('');
+  const [original, setOriginal] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    api.getAdminWallet().then(res => {
+      setWallet(res.wallet || '');
+      setOriginal(res.wallet || '');
+    }).catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
+    if (!wallet || wallet.length < 10) { setMsg('⚠️ Некорректный адрес'); return; }
+    setSaving(true);
+    setMsg('');
+    try {
+      await api.updateAdminWallet(wallet);
+      setOriginal(wallet);
+      setMsg('✅ Кошелёк сохранён');
+      hapticFeedback('success');
+    } catch (err) {
+      setMsg('❌ ' + err.message);
+      hapticFeedback('error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const changed = wallet !== original;
+
+  return (
+    <div className="card" style={{ padding: 20 }}>
+      <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>💎 Кошелёк для депозитов</h3>
+      <div className="form-group">
+        <label className="form-label">TON адрес кошелька</label>
+        <input
+          className="input"
+          type="text"
+          value={wallet}
+          onChange={e => setWallet(e.target.value)}
+          placeholder="EQ... или UQ..."
+          style={{ fontFamily: 'monospace', fontSize: 12 }}
+        />
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+          На этот адрес пользователи будут отправлять TON при пополнении
+        </div>
+      </div>
+      {msg && <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{msg}</div>}
+      <button
+        className="btn btn-primary"
+        style={{ width: '100%', opacity: changed ? 1 : 0.5 }}
+        onClick={handleSave}
+        disabled={saving || !changed}
+      >
+        {saving ? '⏳...' : '💾 Сохранить кошелёк'}
+      </button>
     </div>
   );
 }
