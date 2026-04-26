@@ -146,3 +146,9 @@ export const getDepositHistory = () =>
 export const getAdminWallet = () => request('/admin/wallet');
 export const updateAdminWallet = (wallet) =>
   request('/admin/wallet', { method: 'PUT', body: JSON.stringify({ wallet }) });
+
+// Modules
+export const getModules = () => request('/users/modules');
+export const getAdminModules = () => request('/admin/modules');
+export const updateAdminModules = (modules) =>
+  request('/admin/modules', { method: 'PUT', body: JSON.stringify({ modules }) });

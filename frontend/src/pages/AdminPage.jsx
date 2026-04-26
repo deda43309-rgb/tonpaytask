@@ -205,6 +205,7 @@ export default function AdminPage({ user }) {
           { key: 'tasks', icon: '📋', label: 'Задания' },
           { key: 'users', icon: '👥', label: 'Юзеры' },
           { key: 'revenue', icon: '💰', label: 'Доход' },
+          { key: 'modules', icon: '🧩', label: 'Модули' },
           { key: 'settings', icon: '⚙️', label: 'Настройки' },
         ].map(item => (
           <button
@@ -615,6 +616,11 @@ export default function AdminPage({ user }) {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Modules Tab */}
+          {tab === 'modules' && (
+            <ModulesEditor showToastMsg={showToastMsg} />
           )}
 
           {/* Settings Tab */}
@@ -1124,6 +1130,105 @@ function WalletEditor() {
       >
         {saving ? '⏳...' : '💾 Сохранить кошелёк'}
       </button>
+    </div>
+  );
+}
+
+const MODULE_LIST = [
+  { key: 'tasks', icon: '📋', label: 'Задания', desc: 'Раздел заданий для пользователей' },
+  { key: 'referral', icon: '👥', label: 'Рефералы', desc: 'Система приглашения друзей' },
+  { key: 'advertiser', icon: '📢', label: 'Реклама', desc: 'Рекламодательский кабинет' },
+  { key: 'deposit', icon: '💎', label: 'Депозит', desc: 'Страница пополнения баланса' },
+];
+
+function ModulesEditor({ showToastMsg }) {
+  const [modules, setModules] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api.getAdminModules().then(res => {
+      setModules(res.modules || {});
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const toggle = (key) => {
+    setModules(m => ({ ...m, [key]: !m[key] }));
+    hapticFeedback('medium');
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await api.updateAdminModules(modules);
+      setModules(res.modules);
+      showToastMsg('Модули обновлены ✅');
+      hapticFeedback('success');
+    } catch (err) {
+      showToastMsg(err.message, 'error');
+      hapticFeedback('error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Загрузка...</div>;
+
+  return (
+    <div className="admin-settings stagger">
+      <div className="card" style={{ padding: 20 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>🧩 Управление модулями</h3>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>
+          Включайте и выключайте разделы приложения
+        </p>
+
+        {MODULE_LIST.map(mod => {
+          const enabled = modules[mod.key] !== false;
+          return (
+            <div
+              key={mod.key}
+              onClick={() => toggle(mod.key)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 16px', borderRadius: 14, marginBottom: 8, cursor: 'pointer',
+                background: enabled ? 'rgba(52,199,89,0.06)' : 'var(--bg-glass)',
+                border: `1px solid ${enabled ? 'rgba(52,199,89,0.2)' : 'var(--border)'}`,
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 24 }}>{mod.icon}</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{mod.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{mod.desc}</div>
+                </div>
+              </div>
+              <div style={{
+                width: 48, height: 28, borderRadius: 14, padding: 2,
+                background: enabled ? '#34c759' : 'rgba(120,120,128,0.32)',
+                transition: 'background 0.3s', flexShrink: 0,
+              }}>
+                <div style={{
+                  width: 24, height: 24, borderRadius: 12,
+                  background: '#fff',
+                  transform: enabled ? 'translateX(20px)' : 'translateX(0)',
+                  transition: 'transform 0.3s',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                }} />
+              </div>
+            </div>
+          );
+        })}
+
+        <button
+          className="btn btn-primary btn-block"
+          style={{ marginTop: 12 }}
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? '⏳ Сохранение...' : '💾 Сохранить модули'}
+        </button>
+      </div>
     </div>
   );
 }

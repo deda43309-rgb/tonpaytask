@@ -324,4 +324,20 @@ router.post('/check-unsubscribed', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/users/modules
+ * Public: get active module states for UI rendering.
+ */
+router.get('/modules', async (req, res) => {
+  try {
+    const db = getDb();
+    const rows = await db.all("SELECT key, value FROM settings WHERE key LIKE 'module_%'");
+    const modules = {};
+    rows.forEach(r => { modules[r.key.replace('module_', '')] = r.value === '1'; });
+    res.json({ modules });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 module.exports = router;

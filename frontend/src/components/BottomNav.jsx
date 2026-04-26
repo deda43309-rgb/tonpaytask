@@ -2,14 +2,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { hapticFeedback } from '../utils/telegram';
 import './BottomNav.css';
 
-const tabs = [
-  { path: '/', icon: '🏠', label: 'Главная' },
-  { path: '/tasks', icon: '📋', label: 'Задания' },
-  { path: '/advertiser', icon: '📢', label: 'Реклама' },
-  { path: '/referral', icon: '👥', label: 'Друзья' },
+const allTabs = [
+  { path: '/', icon: '🏠', label: 'Главная', module: null },
+  { path: '/tasks', icon: '📋', label: 'Задания', module: 'tasks' },
+  { path: '/advertiser', icon: '📢', label: 'Реклама', module: 'advertiser' },
+  { path: '/referral', icon: '👥', label: 'Друзья', module: 'referral' },
 ];
 
-export default function BottomNav() {
+export default function BottomNav({ modules = {} }) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -20,9 +20,10 @@ export default function BottomNav() {
     }
   };
 
-  // Don't show on sub-pages without bottom nav relevance
   const hiddenPaths = ['/admin'];
   if (hiddenPaths.some(p => location.pathname.startsWith(p))) return null;
+
+  const tabs = allTabs.filter(t => !t.module || modules[t.module] !== false);
 
   return (
     <nav className="bottom-nav" id="bottom-nav">

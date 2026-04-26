@@ -370,6 +370,10 @@ async function initTables() {
     ['unsub_penalty', '50'],
     ['referral_bonus', '100'],
     ['daily_bonus', '50'],
+    ['module_tasks', '1'],
+    ['module_referral', '1'],
+    ['module_advertiser', '1'],
+    ['module_deposit', '1'],
   ];
   for (const [key, value] of defaults) {
     try {

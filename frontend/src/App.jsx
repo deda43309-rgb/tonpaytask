@@ -18,14 +18,12 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [modules, setModules] = useState({ tasks: true, referral: true, advertiser: true, deposit: true });
 
   useEffect(() => {
-    // Expand the mini app & set colors
     expandApp();
     setHeaderColor('#0a0a1a');
     setBackgroundColor('#0a0a1a');
-
-    // Login
     doLogin();
   }, []);
 
@@ -33,10 +31,10 @@ export default function App() {
     try {
       const startParam = getStartParam();
       console.log('[TonPayTask] initData:', getInitData() ? 'present' : 'empty');
-      console.log('[TonPayTask] startParam:', startParam);
       const data = await api.login(startParam);
-      console.log('[TonPayTask] login result:', data);
       setUser(data.user);
+      // Load modules
+      api.getModules().then(res => setModules(m => ({ ...m, ...res.modules }))).catch(() => {});
     } catch (err) {
       console.error('[TonPayTask] Login failed:', err);
       setError(err.message || 'Unknown login error');
@@ -107,17 +105,17 @@ export default function App() {
       <ErrorBoundary>
         <div style={{ paddingTop: 48 }}>
         <Routes>
-          <Route path="/" element={<HomePage user={user} onUserUpdate={handleUserUpdate} />} />
-          <Route path="/tasks" element={<TasksPage user={user} onUserUpdate={handleUserUpdate} />} />
-          <Route path="/referral" element={<ReferralPage user={user} />} />
+          <Route path="/" element={<HomePage user={user} onUserUpdate={handleUserUpdate} modules={modules} />} />
+          {modules.tasks && <Route path="/tasks" element={<TasksPage user={user} onUserUpdate={handleUserUpdate} />} />}
+          {modules.referral && <Route path="/referral" element={<ReferralPage user={user} />} />}
           <Route path="/admin" element={<AdminPage user={user} />} />
-          <Route path="/advertiser" element={<AdvertiserPage user={user} />} />
+          {modules.advertiser && <Route path="/advertiser" element={<AdvertiserPage user={user} />} />}
           <Route path="/completions" element={<CompletionsPage />} />
-          <Route path="/deposit" element={<DepositPage user={user} onUserUpdate={handleUserUpdate} />} />
+          {modules.deposit && <Route path="/deposit" element={<DepositPage user={user} onUserUpdate={handleUserUpdate} />} />}
         </Routes>
         </div>
       </ErrorBoundary>
-      <BottomNav />
+      <BottomNav modules={modules} />
     </BrowserRouter>
   );
 }

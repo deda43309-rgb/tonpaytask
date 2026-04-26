@@ -622,4 +622,51 @@ router.put('/wallet', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/modules
+ * Get all module states.
+ */
+router.get('/modules', async (req, res) => {
+  try {
+    const db = getDb();
+    const rows = await db.all("SELECT key, value FROM settings WHERE key LIKE 'module_%'");
+    const modules = {};
+    rows.forEach(r => { modules[r.key.replace('module_', '')] = r.value === '1'; });
+    res.json({ modules });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+/**
+ * PUT /api/admin/modules
+ * Update module states.
+ */
+router.put('/modules', async (req, res) => {
+  try {
+    const db = getDb();
+    const { modules } = req.body;
+    
+    for (const [name, enabled] of Object.entries(modules)) {
+      const key = `module_${name}`;
+      const value = enabled ? '1' : '0';
+      await db.run(
+        "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = ?",
+        key, value, value
+      );
+    }
+    
+    // Return updated state
+    const rows = await db.all("SELECT key, value FROM settings WHERE key LIKE 'module_%'");
+    const updated = {};
+    rows.forEach(r => { updated[r.key.replace('module_', '')] = r.value === '1'; });
+    
+    console.log('🔧 [Admin] Modules updated:', updated);
+    res.json({ success: true, modules: updated });
+  } catch (error) {
+    console.error('Update modules error:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 module.exports = router;
