@@ -20,6 +20,7 @@ export default function DepositPage({ user, onUserUpdate }) {
   const [copied, setCopied] = useState('');
   const [history, setHistory] = useState([]);
   const [minDeposit, setMinDeposit] = useState(0.1);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // Check for existing pending deposit on mount
   useEffect(() => {
@@ -229,22 +230,48 @@ export default function DepositPage({ user, onUserUpdate }) {
           <button
             className="btn"
             style={{ width: '100%', marginTop: 12, background: 'rgba(255,59,48,0.1)', color: '#ff3b30', border: '1px solid rgba(255,59,48,0.2)' }}
-            onClick={async () => {
-              try {
-                await api.cancelMainDeposit(deposit.id);
-                setDeposit(null);
-                setStep('amount');
-                setAmount('');
-                setError('');
-                hapticFeedback('success');
-              } catch (err) {
-                setError(err.message);
-                hapticFeedback('error');
-              }
-            }}
+            onClick={() => { setShowCancelConfirm(true); hapticFeedback('warning'); }}
           >
             ✕ Отменить депозит
           </button>
+
+          {/* Cancel confirmation modal */}
+          {showCancelConfirm && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}
+              onClick={(e) => { if (e.target === e.currentTarget) setShowCancelConfirm(false); }}>
+              <div style={{ background: 'var(--bg-card)', borderRadius: 20, padding: 24, maxWidth: 340, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>Вы уверены?</h3>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 20 }}>
+                  Если вы уже отправили TON на указанный кошелёк, <b style={{color:'#ff3b30'}}>средства будут утеряны</b>. Отменяйте только если вы <b>не отправляли</b> перевод.
+                </p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn" style={{ flex: 1, background: 'var(--bg-glass)', color: 'var(--text-primary)' }}
+                    onClick={() => setShowCancelConfirm(false)}>
+                    Нет, вернуться
+                  </button>
+                  <button className="btn" style={{ flex: 1, background: 'rgba(255,59,48,0.15)', color: '#ff3b30', fontWeight: 700 }}
+                    onClick={async () => {
+                      try {
+                        await api.cancelMainDeposit(deposit.id);
+                        setDeposit(null);
+                        setStep('amount');
+                        setAmount('');
+                        setError('');
+                        setShowCancelConfirm(false);
+                        hapticFeedback('success');
+                      } catch (err) {
+                        setError(err.message);
+                        setShowCancelConfirm(false);
+                        hapticFeedback('error');
+                      }
+                    }}>
+                    Да, отменить
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
