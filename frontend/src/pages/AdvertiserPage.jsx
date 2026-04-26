@@ -521,44 +521,276 @@ export default function AdvertiserPage({ user }) {
 
       {/* Deposit Modal */}
       {showDeposit && (
-        <div className="adv-modal-overlay" onClick={() => setShowDeposit(false)}>
-          <div className="adv-modal" onClick={e => e.stopPropagation()}>
-            <h3>💰 Пополнение баланса</h3>
-            <div className="adv-modal-amounts">
-              {DEPOSIT_AMOUNTS.map(amt => (
+        <DepositModal
+          onClose={() => setShowDeposit(false)}
+          onConfirmed={(newBalance) => { setBalance(newBalance); setShowDeposit(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * DepositModal — memo-based TON deposit flow
+ */
+function DepositModal({ onClose, onConfirmed }) {
+  const [step, setStep] = useState('amount'); // 'amount' | 'pending' | 'confirmed'
+  const [amount, setAmount] = useState('');
+  const [deposit, setDeposit] = useState(null);
+  const [wallet, setWallet] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [copied, setCopied] = useState('');
+
+  const AMOUNTS = [50, 100, 500, 1000, 5000];
+
+  // Check for existing pending deposit on mount
+  useEffect(() => {
+    api.getPendingDeposits().then(res => {
+      const pending = res.deposits?.find(d => d.status === 'pending' && new Date(d.expires_at) > new Date());
+      if (pending) {
+        setDeposit(pending);
+        setWallet(res.wallet);
+        setAmount(pending.amount);
+        setStep('pending');
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!deposit || step !== 'pending') return;
+    const updateTimer = () => {
+      const diff = Math.max(0, Math.floor((new Date(deposit.expires_at) - new Date()) / 1000));
+      setTimeLeft(diff);
+      if (diff <= 0) setStep('amount');
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [deposit, step]);
+
+  const handleCreate = async () => {
+    const a = parseFloat(amount);
+    if (!a || a <= 0) { setError('Введите сумму'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.createDeposit(a);
+      setDeposit(res.deposit);
+      setWallet(res.wallet);
+      setStep('pending');
+      hapticFeedback('success');
+    } catch (err) {
+      setError(err.message);
+      hapticFeedback('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheck = async () => {
+    if (!deposit || checking) return;
+    setChecking(true);
+    setError('');
+    hapticFeedback('medium');
+    try {
+      const res = await api.checkDeposit(deposit.id);
+      if (res.status === 'confirmed') {
+        setStep('confirmed');
+        hapticFeedback('success');
+        setTimeout(() => onConfirmed(res.ad_balance), 2000);
+      } else if (res.status === 'expired') {
+        setError('Время истекло. Создайте новый депозит.');
+        setStep('amount');
+        hapticFeedback('error');
+      } else {
+        setError('Перевод ещё не найден. Убедитесь что вы отправили TON с правильным мемо и попробуйте позже.');
+        hapticFeedback('warning');
+      }
+    } catch (err) {
+      setError(err.message);
+      hapticFeedback('error');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const copyText = (text, label) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopied(label);
+    hapticFeedback('light');
+    setTimeout(() => setCopied(''), 2000);
+  };
+
+  const fmtTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
+  return (
+    <div className="adv-modal-overlay" onClick={onClose}>
+      <div className="adv-modal" onClick={e => e.stopPropagation()} style={{ maxHeight: '85vh', overflow: 'auto' }}>
+
+        {/* Step 1: Amount */}
+        {step === 'amount' && (
+          <>
+            <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 16 }}>💰 Пополнение баланса</h3>
+
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+              {AMOUNTS.map(a => (
                 <button
-                  key={amt}
-                  className={`adv-amount-btn ${depositAmount === amt ? 'active' : ''}`}
-                  onClick={() => { hapticFeedback('light'); setDepositAmount(amt); }}
+                  key={a}
+                  onClick={() => { setAmount(String(a)); hapticFeedback('light'); }}
+                  style={{
+                    padding: '8px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                    fontSize: 13, fontWeight: 700, transition: 'all 0.2s',
+                    background: parseFloat(amount) === a ? 'var(--accent-primary)' : 'var(--bg-glass)',
+                    color: parseFloat(amount) === a ? '#fff' : 'var(--text-secondary)',
+                  }}
                 >
-                  {amt.toLocaleString()}
+                  {a} TON
                 </button>
               ))}
             </div>
+
             <input
               className="input"
               type="text"
               inputMode="decimal"
-              value={depositAmount}
-              onChange={e => setDepositAmount(e.target.value)}
-              placeholder="Или введите сумму"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder="Или введите сумму в TON"
+              style={{ marginBottom: 12 }}
             />
+
+            {error && (
+              <div style={{ fontSize: 12, color: '#ff3b30', marginBottom: 8, fontWeight: 600 }}>⚠️ {error}</div>
+            )}
+
             <div className="adv-modal-actions">
-              <button className="btn btn-outline" onClick={() => setShowDeposit(false)}>
-                Отмена
-              </button>
+              <button className="btn btn-outline" onClick={onClose}>Отмена</button>
               <button
                 className="btn btn-primary"
                 style={{ background: 'linear-gradient(135deg, #f5a623, #e09500)' }}
-                onClick={handleDeposit}
-                disabled={depositing}
+                onClick={handleCreate}
+                disabled={loading || !amount}
               >
-                {depositing ? '⏳...' : `+${formatTON(depositAmount)} TON`}
+                {loading ? '⏳...' : 'Далее →'}
               </button>
             </div>
+          </>
+        )}
+
+        {/* Step 2: Pending — show memo & wallet */}
+        {step === 'pending' && deposit && (
+          <>
+            <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>📤 Отправьте TON</h3>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+              Переведите точную сумму на кошелёк ниже с указанным мемо
+            </p>
+
+            {/* Amount */}
+            <div style={{ textAlign: 'center', padding: 12, background: 'var(--bg-glass)', borderRadius: 12, marginBottom: 12 }}>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Сумма перевода</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent-primary)' }}>{formatTON(deposit.amount)} TON</div>
+            </div>
+
+            {/* Memo */}
+            <div
+              onClick={() => copyText(deposit.memo, 'memo')}
+              style={{
+                padding: '14px 16px', background: 'rgba(245, 166, 35, 0.08)', border: '2px dashed rgba(245, 166, 35, 0.3)',
+                borderRadius: 12, marginBottom: 10, cursor: 'pointer', textAlign: 'center',
+              }}
+            >
+              <div style={{ fontSize: 10, color: '#f5a623', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: 4 }}>
+                ⚠️ ОБЯЗАТЕЛЬНЫЙ МЕМО (Comment)
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '0.1em', color: '#f5a623', fontFamily: 'monospace' }}>
+                {deposit.memo}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                {copied === 'memo' ? '✅ Скопировано!' : '👆 Нажмите чтобы скопировать'}
+              </div>
+            </div>
+
+            {/* Wallet */}
+            {wallet && (
+              <div
+                onClick={() => copyText(wallet, 'wallet')}
+                style={{
+                  padding: '12px 16px', background: 'var(--bg-glass)', borderRadius: 12,
+                  marginBottom: 12, cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                  Кошелёк для перевода
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                  {wallet}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+                  {copied === 'wallet' ? '✅ Скопировано!' : '👆 Нажмите чтобы скопировать'}
+                </div>
+              </div>
+            )}
+
+            {/* Timer */}
+            <div style={{
+              textAlign: 'center', padding: 8, borderRadius: 8,
+              background: timeLeft < 300 ? 'rgba(255,59,48,0.08)' : 'rgba(255,149,0,0.08)',
+              marginBottom: 12,
+            }}>
+              <span style={{
+                fontSize: 14, fontWeight: 700,
+                color: timeLeft < 300 ? '#ff3b30' : '#ff9500',
+              }}>
+                ⏰ Осталось: {fmtTime(timeLeft)}
+              </span>
+            </div>
+
+            {error && (
+              <div style={{ fontSize: 12, color: '#ff3b30', marginBottom: 8, fontWeight: 600, textAlign: 'center' }}>
+                {error}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-outline" style={{ flex: 1 }} onClick={onClose}>
+                Закрыть
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ flex: 2, background: 'linear-gradient(135deg, #34c759, #30d158)' }}
+                onClick={handleCheck}
+                disabled={checking}
+              >
+                {checking ? '🔍 Проверяю...' : '✅ Я отправил — Проверить'}
+              </button>
+            </div>
+
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 10, lineHeight: 1.5 }}>
+              💡 Перевод проверяется автоматически каждые 5 мин.
+              <br />Убедитесь что мемо указано <b>точно</b> как показано выше.
+            </div>
+          </>
+        )}
+
+        {/* Step 3: Confirmed */}
+        {step === 'confirmed' && (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>Депозит подтверждён!</h3>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#34c759' }}>
+              +{formatTON(deposit?.amount || 0)} TON
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
+              Баланс обновлён. Окно закроется автоматически.
+            </p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

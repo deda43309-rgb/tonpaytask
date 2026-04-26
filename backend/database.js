@@ -322,6 +322,21 @@ async function initTables() {
     );
   `);
 
+  // Pending deposits (memo-based TON transfers)
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS pending_deposits (
+      id SERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(id),
+      amount NUMERIC NOT NULL,
+      memo TEXT NOT NULL UNIQUE,
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'confirmed', 'expired', 'failed')),
+      tx_hash TEXT,
+      expires_at TIMESTAMP NOT NULL,
+      confirmed_at TIMESTAMP,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
   // Indexes
   const indexes = [
     'CREATE INDEX IF NOT EXISTS idx_task_completions_user ON task_completions(user_id)',
@@ -336,6 +351,9 @@ async function initTables() {
     'CREATE INDEX IF NOT EXISTS idx_ad_transactions_user ON ad_transactions(user_id)',
     'CREATE INDEX IF NOT EXISTS idx_sub_checks_status ON subscription_checks(status)',
     'CREATE INDEX IF NOT EXISTS idx_sub_checks_check_after ON subscription_checks(check_after)',
+    'CREATE INDEX IF NOT EXISTS idx_pending_deposits_user ON pending_deposits(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_pending_deposits_status ON pending_deposits(status)',
+    'CREATE INDEX IF NOT EXISTS idx_pending_deposits_memo ON pending_deposits(memo)',
   ];
   for (const idx of indexes) {
     try { await db.exec(idx); } catch(e) {}

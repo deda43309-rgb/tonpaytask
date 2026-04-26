@@ -122,3 +122,15 @@ export const checkUnsubscribed = (channel_id) =>
     method: 'POST',
     body: JSON.stringify({ channel_id }),
   });
+
+// Deposits (memo-based)
+export const createDeposit = (amount) =>
+  request('/advertiser/deposit/create', {
+    method: 'POST',
+    body: JSON.stringify({ amount }),
+  });
+export const checkDeposit = (id) =>
+  request(`/advertiser/deposit/check/${id}`, { method: 'POST' });
+export const getPendingDeposits = () =>
+  request('/advertiser/deposit/pending');
+

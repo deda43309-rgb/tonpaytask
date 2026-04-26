@@ -9,6 +9,7 @@ const { initDatabase } = require('./database');
 const { authMiddleware } = require('./middleware/auth');
 const { initBot, getBot } = require('./services/bot');
 const { startSubscriptionChecker, stopSubscriptionChecker } = require('./services/subscriptionChecker');
+const { startDepositChecker, stopDepositChecker } = require('./services/depositChecker');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -80,7 +81,8 @@ function gracefulShutdown(signal) {
 
   // Stop subscription checker
   stopSubscriptionChecker();
-  console.log('✅ Subscription checker stopped');
+  stopDepositChecker();
+  console.log('✅ Background services stopped');
 
   // Stop bot polling
   const bot = getBot();
@@ -122,8 +124,9 @@ async function start() {
   // Initialize Telegram Bot
   if (process.env.BOT_TOKEN && process.env.BOT_TOKEN !== 'YOUR_BOT_TOKEN_HERE') {
     initBot(process.env.BOT_TOKEN);
-    // Start subscription checker (runs every 30 min)
+    // Start background services
     startSubscriptionChecker();
+    startDepositChecker();
   } else {
     console.log('⚠️  BOT_TOKEN not set — Telegram Bot disabled');
     console.log('   Set BOT_TOKEN in .env to enable the bot');

@@ -118,9 +118,124 @@ router.get('/balance', async (req, res) => {
 });
 
 /**
+ * POST /api/advertiser/deposit/create
+ * Create a pending deposit — returns a unique memo for TON transfer.
+ * User has 1 hour to send TON with this memo.
+ */
+router.post('/deposit/create', async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.telegramUser.id;
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0 || amount > 1000000) {
+      return res.status(400).json({ error: 'Неверная сумма (0.01 — 1,000,000)' });
+    }
+
+    // Check if user already has an active pending deposit
+    const existing = await db.get(
+      "SELECT * FROM pending_deposits WHERE user_id = ? AND status = 'pending' AND expires_at > NOW()",
+      userId
+    );
+    if (existing) {
+      return res.json({
+        success: true,
+        deposit: existing,
+        wallet: process.env.PROJECT_WALLET || '',
+        message: 'У вас уже есть активный депозит',
+      });
+    }
+
+    const { generateMemo } = require('../services/depositChecker');
+    const memo = generateMemo();
+
+    await db.run(
+      `INSERT INTO pending_deposits (user_id, amount, memo, expires_at) 
+       VALUES (?, ?, ?, NOW() + INTERVAL '1 hour')`,
+      userId, amount, memo
+    );
+
+    const deposit = await db.get(
+      "SELECT * FROM pending_deposits WHERE user_id = ? AND memo = ?",
+      userId, memo
+    );
+
+    console.log(`📝 [Deposit] Created: ${memo} for ${amount} TON (user ${userId})`);
+
+    res.json({
+      success: true,
+      deposit,
+      wallet: process.env.PROJECT_WALLET || '',
+    });
+  } catch (error) {
+    console.error('Create deposit error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * POST /api/advertiser/deposit/check/:id
+ * Manually check a specific pending deposit against TON blockchain.
+ */
+router.post('/deposit/check/:id', async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.telegramUser.id;
+    const depositId = parseInt(req.params.id);
+
+    // Verify ownership
+    const dep = await db.get(
+      'SELECT * FROM pending_deposits WHERE id = ? AND user_id = ?',
+      depositId, userId
+    );
+    if (!dep) {
+      return res.status(404).json({ error: 'Депозит не найден' });
+    }
+
+    const { checkSingleDeposit } = require('../services/depositChecker');
+    const result = await checkSingleDeposit(depositId);
+
+    // Get updated balance if confirmed
+    let ad_balance;
+    if (result.status === 'confirmed') {
+      const user = await db.get('SELECT ad_balance FROM users WHERE id = ?', userId);
+      ad_balance = user?.ad_balance;
+    }
+
+    // Get updated deposit record
+    const updated = await db.get('SELECT * FROM pending_deposits WHERE id = ?', depositId);
+
+    res.json({ ...result, deposit: updated, ad_balance });
+  } catch (error) {
+    console.error('Check deposit error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
+ * GET /api/advertiser/deposit/pending
+ * Get user's pending & recent deposits.
+ */
+router.get('/deposit/pending', async (req, res) => {
+  try {
+    const db = getDb();
+    const userId = req.telegramUser.id;
+
+    const deposits = await db.all(
+      `SELECT * FROM pending_deposits WHERE user_id = ? ORDER BY created_at DESC LIMIT 10`,
+      userId
+    );
+
+    res.json({ deposits, wallet: process.env.PROJECT_WALLET || '' });
+  } catch (error) {
+    console.error('Get pending deposits error:', error);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+/**
  * POST /api/advertiser/deposit
- * Пополнение рекламного баланса (только для админа — ручное зачисление)
- * Для обычных пользователей требуется реальная платёжная интеграция.
+ * Admin manual deposit (PIN required).
  */
 router.post('/deposit', async (req, res) => {
   try {
@@ -128,31 +243,23 @@ router.post('/deposit', async (req, res) => {
     const userId = req.telegramUser.id;
     const { amount, target_user_id, pin } = req.body;
 
-    // Only admins can credit ad_balance manually
-    const adminIds = (process.env.ADMIN_IDS || '')
-      .split(',')
-      .map(id => parseInt(id.trim()))
-      .filter(Boolean);
+    const adminIds = (process.env.ADMIN_IDS || '').split(',').map(id => parseInt(id.trim())).filter(Boolean);
     const userRow = await db.get('SELECT is_admin FROM users WHERE id = ?', userId);
     const isAdmin = adminIds.includes(userId) || userRow?.is_admin;
 
     if (!isAdmin) {
-      return res.status(403).json({ 
-        error: 'Пополнение доступно только через админа. Свяжитесь с администратором для пополнения рекламного баланса.' 
-      });
+      return res.status(403).json({ error: 'Только для админа' });
     }
 
-    // Require admin PIN
     const correctPin = process.env.ADMIN_PIN || '1234';
     if (!pin || String(pin) !== String(correctPin)) {
-      return res.status(403).json({ error: 'Неверный PIN-код' });
+      return res.status(403).json({ error: 'Неверный PIN' });
     }
 
-    if (!amount || amount <= 0 || amount > 1000000) {
-      return res.status(400).json({ error: 'Неверная сумма (1 — 1,000,000)' });
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Неверная сумма' });
     }
 
-    // Admin can deposit to self or another user
     const depositUserId = target_user_id || userId;
 
     const result = await db.transaction(async (tx) => {
@@ -160,12 +267,10 @@ router.post('/deposit', async (req, res) => {
         'INSERT INTO ad_deposits (user_id, amount, method, status) VALUES (?, ?, ?, ?)',
         depositUserId, amount, 'admin_manual', 'completed'
       );
-
       await tx.run(
         'UPDATE users SET ad_balance = ad_balance + ?, updated_at = NOW() WHERE id = ?',
         amount, depositUserId
       );
-
       return await tx.get('SELECT ad_balance FROM users WHERE id = ?', depositUserId);
     });
 
