@@ -667,241 +667,6 @@ export default function AdminPage({ user }) {
                 </button>
               </div>
 
-              <div className="card" style={{ padding: 20 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>📢 Ценообразование рекламных заданий</h3>
-                
-                <div className="form-group">
-                  <label className="form-label">💰 Цена для рекламодателя (за 1 выполнение)</label>
-                  <input
-                    className="input"
-                    type="text"
-                    inputMode="decimal"
-                    value={settings.ad_price ?? ''}
-                    onChange={e => setSettings(s => ({ ...s, ad_price: e.target.value }))}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">🎯 Награда исполнителю</label>
-                  <input
-                    className="input"
-                    type="text"
-                    inputMode="decimal"
-                    value={settings.ad_user_reward ?? ''}
-                    onChange={e => setSettings(s => ({ ...s, ad_user_reward: e.target.value }))}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">👥 Реферальная награда</label>
-                  <input
-                    className="input"
-                    type="text"
-                    inputMode="decimal"
-                    value={settings.ad_ref_reward ?? ''}
-                    onChange={e => setSettings(s => ({ ...s, ad_ref_reward: e.target.value }))}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">🏦 Комиссия системы</label>
-                  <input
-                    className="input"
-                    type="text"
-                    inputMode="decimal"
-                    value={settings.ad_commission ?? ''}
-                    onChange={e => setSettings(s => ({ ...s, ad_commission: e.target.value }))}
-                  />
-                </div>
-
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px 0', borderTop: '1px solid var(--border)', marginTop: 8 }}>
-                  📊 Итого: {formatTON(parseFloat(settings.ad_user_reward || 10) + parseFloat(settings.ad_ref_reward || 2) + parseFloat(settings.ad_commission || 8))} TON
-                  {' '}из {formatTON(settings.ad_price || 20)} TON
-                  {Math.abs((parseFloat(settings.ad_user_reward || 10) + parseFloat(settings.ad_ref_reward || 2) + parseFloat(settings.ad_commission || 8)) - parseFloat(settings.ad_price || 20)) > 0.0001 && (
-                    <span style={{ color: '#ff3b30', fontWeight: 700 }}> ⚠ Суммы не совпадают!</span>
-                  )}
-                </div>
-
-                <button
-                  className="btn btn-primary mt-16"
-                  style={{ width: '100%' }}
-                  disabled={savingSettings}
-                  onClick={async () => {
-                    setSavingSettings(true);
-                    try {
-                      const res = await api.updateAdminSettings({
-                        ad_price: settings.ad_price,
-                        ad_user_reward: settings.ad_user_reward,
-                        ad_ref_reward: settings.ad_ref_reward,
-                        ad_commission: settings.ad_commission,
-                        sub_check_hours: settings.sub_check_hours,
-                        unsub_penalty: settings.unsub_penalty,
-                        referral_bonus: settings.referral_bonus,
-                        daily_bonus: settings.daily_bonus,
-                      });
-                      setSettings(res.settings);
-                      showToastMsg('Настройки сохранены ✅');
-                      hapticFeedback('success');
-                    } catch (err) {
-                      showToastMsg(err.message, 'error');
-                    } finally {
-                      setSavingSettings(false);
-                    }
-                  }}
-                >
-                  {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
-                </button>
-              </div>
-
-              <div className="card" style={{ padding: 20 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🎁 Бонусы</h3>
-                
-                <div className="form-group">
-                  <label className="form-label">👥 Реферальный бонус (TON)</label>
-                  <input
-                    className="input"
-                    type="text"
-                    inputMode="decimal"
-                    value={settings.referral_bonus ?? ''}
-                    onChange={e => setSettings(s => ({ ...s, referral_bonus: e.target.value }))}
-                  />
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    Бонус получают оба — пригласивший и приглашённый
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">🌟 Ежедневный бонус (TON)</label>
-                  <input
-                    className="input"
-                    type="text"
-                    inputMode="decimal"
-                    value={settings.daily_bonus ?? ''}
-                    onChange={e => setSettings(s => ({ ...s, daily_bonus: e.target.value }))}
-                  />
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    Базовый бонус × стрик (макс 7 дней). Напр.: 0.001 × 3 = 0.003 TON
-                  </div>
-                </div>
-
-                <button
-                  className="btn btn-primary mt-16"
-                  style={{ width: '100%' }}
-                  disabled={savingSettings}
-                  onClick={async () => {
-                    setSavingSettings(true);
-                    try {
-                      const res = await api.updateAdminSettings({
-                        referral_bonus: settings.referral_bonus,
-                        daily_bonus: settings.daily_bonus,
-                      });
-                      setSettings(res.settings);
-                      showToastMsg('Бонусы сохранены ✅');
-                      hapticFeedback('success');
-                    } catch (err) {
-                      showToastMsg(err.message, 'error');
-                    } finally {
-                      setSavingSettings(false);
-                    }
-                  }}
-                >
-                  {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
-                </button>
-              </div>
-
-              <div className="card" style={{ padding: 20 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>🔍 Проверка подписок</h3>
-                
-                <div className="form-group">
-                  <label className="form-label">⏰ Обязательная подписка (часов)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="1"
-                    max="720"
-                    value={settings.sub_check_hours ?? ''}
-                    onChange={e => setSettings(s => ({ ...s, sub_check_hours: e.target.value }))}
-                  />
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    Юзер должен оставаться подписан указанное время. После этого срока может отписаться без штрафа.
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">🔄 Интервал проверки (минут)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="1"
-                    max="1440"
-                    value={settings.unsub_check_interval ?? ''}
-                    onChange={e => setSettings(s => ({ ...s, unsub_check_interval: e.target.value }))}
-                  />
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    Как часто бот проверяет подписки (по умолчанию 30 мин)
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">💸 Штраф за отписку (TON)</label>
-                  <input
-                    className="input"
-                    type="text"
-                    inputMode="decimal"
-                    value={settings.unsub_penalty ?? ''}
-                    onChange={e => setSettings(s => ({ ...s, unsub_penalty: e.target.value }))}
-                  />
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    Если юзер отписался — с баланса списывается штраф и отправляется уведомление
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    className="btn btn-primary"
-                    style={{ flex: 1 }}
-                    disabled={savingSettings}
-                    onClick={async () => {
-                      setSavingSettings(true);
-                      try {
-                        const res = await api.updateAdminSettings({
-                          sub_check_hours: settings.sub_check_hours,
-                          unsub_penalty: settings.unsub_penalty,
-                          unsub_check_interval: settings.unsub_check_interval,
-                        });
-                        setSettings(res.settings);
-                        showToastMsg('Настройки подписок сохранены ✅');
-                        hapticFeedback('success');
-                      } catch (err) {
-                        showToastMsg(err.message, 'error');
-                      } finally {
-                        setSavingSettings(false);
-                      }
-                    }}
-                  >
-                    {savingSettings ? '⚙️ Сохранение...' : '💾 Сохранить'}
-                  </button>
-                  <button
-                    className="btn"
-                    style={{ 
-                      flex: 1, background: 'rgba(52,199,89,0.15)', 
-                      color: '#34c759', border: '1px solid rgba(52,199,89,0.3)' 
-                    }}
-                    onClick={async () => {
-                      try {
-                        const res = await api.checkSubscriptions();
-                        showToastMsg(res.message || 'Проверка завершена ✅');
-                        hapticFeedback('success');
-                      } catch (err) {
-                        showToastMsg(err.message || 'Ошибка проверки', 'error');
-                      }
-                    }}
-                  >
-                    🔍 Проверить сейчас
-                  </button>
-                </div>
-              </div>
-
               <div className="card" style={{ padding: 20, border: '1px solid rgba(239,68,68,0.3)' }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, color: '#ef4444' }}>⚠️ Опасная зона</h3>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
@@ -1135,98 +900,140 @@ function WalletEditor() {
 }
 
 const MODULE_LIST = [
-  { key: 'tasks', icon: '📋', label: 'Задания', desc: 'Раздел заданий для пользователей' },
-  { key: 'referral', icon: '👥', label: 'Рефералы', desc: 'Система приглашения друзей' },
-  { key: 'advertiser', icon: '📢', label: 'Реклама', desc: 'Рекламодательский кабинет' },
-  { key: 'deposit', icon: '💎', label: 'Депозит', desc: 'Страница пополнения баланса' },
+  { key: 'tasks', icon: '\ud83d\udccb', label: '\u0417\u0430\u0434\u0430\u043d\u0438\u044f', desc: '\u0420\u0430\u0437\u0434\u0435\u043b \u0437\u0430\u0434\u0430\u043d\u0438\u0439 \u0434\u043b\u044f \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439', hasSettings: true },
+  { key: 'referral', icon: '\ud83d\udc65', label: '\u0420\u0435\u0444\u0435\u0440\u0430\u043b\u044b', desc: '\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f \u0434\u0440\u0443\u0437\u0435\u0439', hasSettings: true },
+  { key: 'advertiser', icon: '\ud83d\udce2', label: '\u0420\u0435\u043a\u043b\u0430\u043c\u0430', desc: '\u0420\u0435\u043a\u043b\u0430\u043c\u043e\u0434\u0430\u0442\u0435\u043b\u044c\u0441\u0438\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442' },
+  { key: 'deposit', icon: '\ud83d\udc8e', label: '\u0414\u0435\u043f\u043e\u0437\u0438\u0442', desc: '\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u043f\u043e\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0431\u0430\u043b\u0430\u043d\u0441\u0430' },
 ];
 
 function ModulesEditor({ showToastMsg }) {
   const [modules, setModules] = useState({});
+  const [mSettings, setMSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingS, setSavingS] = useState(false);
+  const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
-    api.getAdminModules().then(res => {
-      setModules(res.modules || {});
-    }).catch(() => {}).finally(() => setLoading(false));
+    Promise.all([api.getAdminModules(), api.getAdminSettings()])
+      .then(([mR, sR]) => { setModules(mR.modules || {}); setMSettings(sR.settings || {}); })
+      .catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const toggle = (key) => {
-    setModules(m => ({ ...m, [key]: !m[key] }));
-    hapticFeedback('medium');
-  };
+  const toggleMod = (key, e) => { e.stopPropagation(); setModules(m => ({ ...m, [key]: !m[key] })); hapticFeedback('medium'); };
 
-  const handleSave = async () => {
+  const saveModules = async () => {
     setSaving(true);
-    try {
-      const res = await api.updateAdminModules(modules);
-      setModules(res.modules);
-      showToastMsg('Модули обновлены ✅');
-      hapticFeedback('success');
-    } catch (err) {
-      showToastMsg(err.message, 'error');
-      hapticFeedback('error');
-    } finally {
-      setSaving(false);
-    }
+    try { const r = await api.updateAdminModules(modules); setModules(r.modules); showToastMsg('\u041c\u043e\u0434\u0443\u043b\u0438 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u044b \u2705'); hapticFeedback('success'); }
+    catch (e) { showToastMsg(e.message, 'error'); hapticFeedback('error'); }
+    finally { setSaving(false); }
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Загрузка...</div>;
+  const saveSettings = async (keys, label) => {
+    setSavingS(true);
+    try {
+      const p = {}; keys.forEach(k => { p[k] = mSettings[k]; });
+      const r = await api.updateAdminSettings(p);
+      setMSettings(r.settings); showToastMsg(label + ' \u2705'); hapticFeedback('success');
+    } catch (e) { showToastMsg(e.message, 'error'); }
+    finally { setSavingS(false); }
+  };
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>{'\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430...'}</div>;
+
+  const Sw = ({ on }) => (
+    <div style={{ width: 48, height: 28, borderRadius: 14, padding: 2, background: on ? '#34c759' : 'rgba(120,120,128,0.32)', transition: 'background 0.3s', flexShrink: 0 }}>
+      <div style={{ width: 24, height: 24, borderRadius: 12, background: '#fff', transform: on ? 'translateX(20px)' : 'translateX(0)', transition: 'transform 0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
+    </div>
+  );
+
+  const Inp = ({ label, val, set, hint, tp }) => (
+    <div className="form-group">
+      <label className="form-label">{label}</label>
+      <input className="input" type={tp || 'text'} inputMode={tp === 'number' ? 'numeric' : 'decimal'} value={val ?? ''} onChange={e => set(e.target.value)} />
+      {hint && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{hint}</div>}
+    </div>
+  );
 
   return (
     <div className="admin-settings stagger">
       <div className="card" style={{ padding: 20 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>🧩 Управление модулями</h3>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>
-          Включайте и выключайте разделы приложения
-        </p>
+        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{'\ud83e\udde9 \u0423\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u043c\u043e\u0434\u0443\u043b\u044f\u043c\u0438'}</h3>
+        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>{'\u0412\u043a\u043b\u044e\u0447\u0430\u0439\u0442\u0435/\u0432\u044b\u043a\u043b\u044e\u0447\u0430\u0439\u0442\u0435 \u0440\u0430\u0437\u0434\u0435\u043b\u044b. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u043d\u0430 \u043c\u043e\u0434\u0443\u043b\u044c \u0434\u043b\u044f \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a.'}</p>
 
         {MODULE_LIST.map(mod => {
-          const enabled = modules[mod.key] !== false;
+          const on = modules[mod.key] !== false;
+          const exp = expanded === mod.key;
           return (
-            <div
-              key={mod.key}
-              onClick={() => toggle(mod.key)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 16px', borderRadius: 14, marginBottom: 8, cursor: 'pointer',
-                background: enabled ? 'rgba(52,199,89,0.06)' : 'var(--bg-glass)',
-                border: `1px solid ${enabled ? 'rgba(52,199,89,0.2)' : 'var(--border)'}`,
-                transition: 'all 0.2s',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 24 }}>{mod.icon}</span>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{mod.label}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{mod.desc}</div>
+            <div key={mod.key} style={{ marginBottom: 8 }}>
+              <div onClick={() => mod.hasSettings && setExpanded(exp ? null : mod.key)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '14px 16px', borderRadius: exp ? '14px 14px 0 0' : 14,
+                  cursor: mod.hasSettings ? 'pointer' : 'default',
+                  background: on ? 'rgba(52,199,89,0.06)' : 'var(--bg-glass)',
+                  border: '1px solid ' + (on ? 'rgba(52,199,89,0.2)' : 'var(--border)'),
+                  borderBottom: exp ? 'none' : undefined, transition: 'all 0.2s',
+                }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 24 }}>{mod.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700 }}>
+                      {mod.label}
+                      {mod.hasSettings && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 6 }}>{exp ? '\u25bc' : '\u25b6'}</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{mod.desc}</div>
+                  </div>
                 </div>
+                <div onClick={e => toggleMod(mod.key, e)}><Sw on={on} /></div>
               </div>
-              <div style={{
-                width: 48, height: 28, borderRadius: 14, padding: 2,
-                background: enabled ? '#34c759' : 'rgba(120,120,128,0.32)',
-                transition: 'background 0.3s', flexShrink: 0,
-              }}>
-                <div style={{
-                  width: 24, height: 24, borderRadius: 12,
-                  background: '#fff',
-                  transform: enabled ? 'translateX(20px)' : 'translateX(0)',
-                  transition: 'transform 0.3s',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                }} />
-              </div>
+
+              {exp && mod.key === 'tasks' && (
+                <div style={{ padding: 16, background: 'var(--bg-glass)', border: '1px solid ' + (on ? 'rgba(52,199,89,0.2)' : 'var(--border)'), borderTop: 'none', borderRadius: '0 0 14px 14px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 12, color: 'var(--accent-primary)' }}>{'\ud83d\udce2 \u0426\u0435\u043d\u043e\u043e\u0431\u0440\u0430\u0437\u043e\u0432\u0430\u043d\u0438\u0435'}</div>
+                  <Inp label={'\ud83d\udcb0 \u0426\u0435\u043d\u0430 \u0434\u043b\u044f \u0440\u0435\u043a\u043b\u0430\u043c\u043e\u0434\u0430\u0442\u0435\u043b\u044f'} val={mSettings.ad_price} set={v => setMSettings(s => ({...s, ad_price: v}))} />
+                  <Inp label={'\ud83c\udfaf \u041d\u0430\u0433\u0440\u0430\u0434\u0430 \u0438\u0441\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044e'} val={mSettings.ad_user_reward} set={v => setMSettings(s => ({...s, ad_user_reward: v}))} />
+                  <Inp label={'\ud83d\udc65 \u0420\u0435\u0444\u0435\u0440\u0430\u043b\u044c\u043d\u0430\u044f \u043d\u0430\u0433\u0440\u0430\u0434\u0430'} val={mSettings.ad_ref_reward} set={v => setMSettings(s => ({...s, ad_ref_reward: v}))} />
+                  <Inp label={'\ud83c\udfe6 \u041a\u043e\u043c\u0438\u0441\u0441\u0438\u044f \u0441\u0438\u0441\u0442\u0435\u043c\u044b'} val={mSettings.ad_commission} set={v => setMSettings(s => ({...s, ad_commission: v}))} />
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '8px 0', borderTop: '1px solid var(--border)', marginTop: 4 }}>
+                    {'\ud83d\udcca \u0418\u0442\u043e\u0433\u043e: '}{formatTON(parseFloat(mSettings.ad_user_reward||10)+parseFloat(mSettings.ad_ref_reward||2)+parseFloat(mSettings.ad_commission||8))}{' TON \u0438\u0437 '}{formatTON(mSettings.ad_price||20)}{' TON'}
+                    {Math.abs((parseFloat(mSettings.ad_user_reward||10)+parseFloat(mSettings.ad_ref_reward||2)+parseFloat(mSettings.ad_commission||8))-parseFloat(mSettings.ad_price||20))>0.0001 && (
+                      <span style={{ color: '#ff3b30', fontWeight: 700 }}>{' \u26a0 \u041d\u0435 \u0441\u043e\u0432\u043f\u0430\u0434\u0430\u044e\u0442!'}</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, margin: '16px 0 12px', color: 'var(--accent-primary)' }}>{'\ud83d\udd0d \u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043f\u043e\u0434\u043f\u0438\u0441\u043e\u043a'}</div>
+                  <Inp label={'\u23f0 \u041e\u0431\u044f\u0437\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0430 (\u0447\u0430\u0441\u043e\u0432)'} val={mSettings.sub_check_hours} tp="number" set={v => setMSettings(s => ({...s, sub_check_hours: v}))} hint={'\u0421\u043a\u043e\u043b\u044c\u043a\u043e \u0447\u0430\u0441\u043e\u0432 \u044e\u0437\u0435\u0440 \u0434\u043e\u043b\u0436\u0435\u043d \u043e\u0441\u0442\u0430\u0432\u0430\u0442\u044c\u0441\u044f \u043f\u043e\u0434\u043f\u0438\u0441\u0430\u043d'} />
+                  <Inp label={'\ud83d\udd04 \u0418\u043d\u0442\u0435\u0440\u0432\u0430\u043b \u043f\u0440\u043e\u0432\u0435\u0440\u043a\u0438 (\u043c\u0438\u043d\u0443\u0442)'} val={mSettings.unsub_check_interval} tp="number" set={v => setMSettings(s => ({...s, unsub_check_interval: v}))} hint={'\u041a\u0430\u043a \u0447\u0430\u0441\u0442\u043e \u0431\u043e\u0442 \u043f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u0442 \u043f\u043e\u0434\u043f\u0438\u0441\u043a\u0438'} />
+                  <Inp label={'\ud83d\udcb8 \u0428\u0442\u0440\u0430\u0444 \u0437\u0430 \u043e\u0442\u043f\u0438\u0441\u043a\u0443 (TON)'} val={mSettings.unsub_penalty} set={v => setMSettings(s => ({...s, unsub_penalty: v}))} hint={'\u0421\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u043f\u0440\u0438 \u0440\u0430\u043d\u043d\u0435\u0439 \u043e\u0442\u043f\u0438\u0441\u043a\u0435'} />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button className="btn btn-primary" style={{ flex: 1 }} disabled={savingS}
+                      onClick={() => saveSettings(['ad_price','ad_user_reward','ad_ref_reward','ad_commission','sub_check_hours','unsub_penalty','unsub_check_interval'], '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u0439 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b')}>
+                      {savingS ? '\u23f3...' : '\ud83d\udcbe \u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c'}
+                    </button>
+                    <button className="btn" style={{ flex: 1, background: 'rgba(52,199,89,0.15)', color: '#34c759', border: '1px solid rgba(52,199,89,0.3)' }}
+                      onClick={async () => { try { const r = await api.checkSubscriptions(); showToastMsg(r.message || '\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u2705'); hapticFeedback('success'); } catch(e) { showToastMsg(e.message, 'error'); } }}>
+                      {'\ud83d\udd0d \u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {exp && mod.key === 'referral' && (
+                <div style={{ padding: 16, background: 'var(--bg-glass)', border: '1px solid ' + (on ? 'rgba(52,199,89,0.2)' : 'var(--border)'), borderTop: 'none', borderRadius: '0 0 14px 14px' }}>
+                  <Inp label={'\ud83d\udc65 \u0420\u0435\u0444\u0435\u0440\u0430\u043b\u044c\u043d\u044b\u0439 \u0431\u043e\u043d\u0443\u0441 (TON)'} val={mSettings.referral_bonus} set={v => setMSettings(s => ({...s, referral_bonus: v}))} hint={'\u0411\u043e\u043d\u0443\u0441 \u043f\u043e\u043b\u0443\u0447\u0430\u044e\u0442 \u043e\u0431\u0430 \u2014 \u043f\u0440\u0438\u0433\u043b\u0430\u0441\u0438\u0432\u0448\u0438\u0439 \u0438 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0451\u043d\u043d\u044b\u0439'} />
+                  <Inp label={'\ud83c\udf1f \u0415\u0436\u0435\u0434\u043d\u0435\u0432\u043d\u044b\u0439 \u0431\u043e\u043d\u0443\u0441 (TON)'} val={mSettings.daily_bonus} set={v => setMSettings(s => ({...s, daily_bonus: v}))} hint={'\u0411\u0430\u0437\u043e\u0432\u044b\u0439 \u0431\u043e\u043d\u0443\u0441 \u00d7 \u0441\u0442\u0440\u0438\u043a (\u043c\u0430\u043a\u0441 7 \u0434\u043d\u0435\u0439)'} />
+                  <button className="btn btn-primary btn-block" style={{ marginTop: 8 }} disabled={savingS}
+                    onClick={() => saveSettings(['referral_bonus','daily_bonus'], '\u0411\u043e\u043d\u0443\u0441\u044b \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u044b')}>
+                    {savingS ? '\u23f3...' : '\ud83d\udcbe \u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c'}
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
 
-        <button
-          className="btn btn-primary btn-block"
-          style={{ marginTop: 12 }}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? '⏳ Сохранение...' : '💾 Сохранить модули'}
+        <button className="btn btn-primary btn-block" style={{ marginTop: 12 }} onClick={saveModules} disabled={saving}>
+          {saving ? '\u23f3 \u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435...' : '\ud83d\udcbe \u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u044c \u043c\u043e\u0434\u0443\u043b\u0438'}
         </button>
       </div>
     </div>
