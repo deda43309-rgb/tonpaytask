@@ -440,6 +440,11 @@ router.put('/tasks/:id', async (req, res) => {
       return res.status(400).json({ error: 'Статус должен быть active или paused' });
     }
 
+    // Prevent bypassing moderation
+    if (status === 'active' && (task.status === 'pending_review' || task.status === 'rejected')) {
+      return res.status(403).json({ error: 'Задание на модерации. Дождитесь проверки администратором.' });
+    }
+
     await db.run('UPDATE ad_tasks SET status = ? WHERE id = ?', status, taskId);
     const updated = await db.get('SELECT * FROM ad_tasks WHERE id = ?', taskId);
 

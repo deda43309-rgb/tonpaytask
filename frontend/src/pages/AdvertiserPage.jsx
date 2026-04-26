@@ -271,11 +271,24 @@ export default function AdvertiserPage({ user }) {
                           <span>−{formatTON(spent)} TON</span>
                         </div>
                       </div>
-                      {task.status !== 'completed' && (
+                      {(task.status === 'active' || task.status === 'paused') && (
                         <div className="adv-task-actions">
                           <button className="btn btn-sm btn-outline" onClick={() => handleToggle(task)}>
                             {task.status === 'active' ? '⏸ Пауза' : '▶️ Возобновить'}
                           </button>
+                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(task)}>
+                            🗑 Удалить
+                          </button>
+                        </div>
+                      )}
+                      {task.status === 'pending_review' && (
+                        <div style={{ fontSize: 12, color: '#ff9500', textAlign: 'center', padding: '8px 0' }}>
+                          ⏳ Ожидайте проверки администратором
+                        </div>
+                      )}
+                      {task.status === 'rejected' && (
+                        <div className="adv-task-actions">
+                          <div style={{ fontSize: 12, color: '#ff3b30', flex: 1 }}>Средства возвращены на баланс</div>
                           <button className="btn btn-sm btn-danger" onClick={() => handleDelete(task)}>
                             🗑 Удалить
                           </button>
