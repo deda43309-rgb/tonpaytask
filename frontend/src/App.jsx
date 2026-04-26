@@ -11,6 +11,7 @@ import AdminPage from './pages/AdminPage';
 import AdvertiserPage from './pages/AdvertiserPage';
 import CompletionsPage from './pages/CompletionsPage';
 import KarmaPage from './pages/KarmaPage';
+import DepositPage from './pages/DepositPage';
 import { getStartParam, expandApp, setHeaderColor, setBackgroundColor, getInitData } from './utils/telegram';
 import * as api from './utils/api';
 
@@ -114,6 +115,7 @@ export default function App() {
           <Route path="/advertiser" element={<AdvertiserPage user={user} />} />
           <Route path="/completions" element={<CompletionsPage />} />
           <Route path="/karma" element={<KarmaPage user={user} />} />
+          <Route path="/deposit" element={<DepositPage user={user} onUserUpdate={handleUserUpdate} />} />
         </Routes>
         </div>
       </ErrorBoundary>

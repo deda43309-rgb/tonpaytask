@@ -105,7 +105,7 @@ async function checkPendingDeposits() {
             dep.user_id, dep.amount, 'ton_memo', 'completed'
           );
           await tx.run(
-            'UPDATE users SET ad_balance = ad_balance + ?, updated_at = NOW() WHERE id = ?',
+            'UPDATE users SET balance = balance + ?, updated_at = NOW() WHERE id = ?',
             dep.amount, dep.user_id
           );
         });
@@ -174,7 +174,7 @@ async function checkSingleDeposit(depositId) {
             dep.user_id, dep.amount, 'ton_memo', 'completed'
           );
           await txDb.run(
-            'UPDATE users SET ad_balance = ad_balance + ?, updated_at = NOW() WHERE id = ?',
+            'UPDATE users SET balance = balance + ?, updated_at = NOW() WHERE id = ?',
             dep.amount, dep.user_id
           );
         });

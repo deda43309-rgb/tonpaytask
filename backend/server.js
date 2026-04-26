@@ -44,6 +44,7 @@ app.use('/api/auth/login', strictLimiter);
 app.use('/api/users/daily-bonus', strictLimiter);
 app.use('/api/admin/reset', strictLimiter);
 app.use('/api/advertiser/deposit', strictLimiter);
+app.use('/api/deposit', strictLimiter);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -56,6 +57,7 @@ app.use('/api/tasks', authMiddleware, require('./routes/tasks'));
 app.use('/api/users', authMiddleware, require('./routes/users'));
 app.use('/api/admin', authMiddleware, require('./routes/admin'));
 app.use('/api/advertiser', authMiddleware, require('./routes/advertiser'));
+app.use('/api/deposit', authMiddleware, require('./routes/deposit'));
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {

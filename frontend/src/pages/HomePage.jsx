@@ -214,6 +214,18 @@ export default function HomePage({ user, onUserUpdate }) {
         <div className="card profile-menu-card">
           <button
             className="profile-menu-item"
+            onClick={() => { hapticFeedback('light'); navigate('/deposit'); }}
+            id="menu-deposit"
+          >
+            <span className="profile-menu-icon">💎</span>
+            <span className="profile-menu-label">Пополнить баланс</span>
+            <span className="profile-menu-arrow">›</span>
+          </button>
+
+          <div className="profile-menu-divider" />
+
+          <button
+            className="profile-menu-item"
             onClick={() => { hapticFeedback('light'); navigate('/completions'); }}
             id="menu-tasks"
           >

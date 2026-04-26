@@ -134,3 +134,11 @@ export const checkDeposit = (id) =>
 export const getPendingDeposits = () =>
   request('/advertiser/deposit/pending');
 
+// Main balance deposits
+export const createMainDeposit = (amount) =>
+  request('/deposit/create', { method: 'POST', body: JSON.stringify({ amount }) });
+export const checkMainDeposit = (id) =>
+  request(`/deposit/check/${id}`, { method: 'POST' });
+export const getDepositHistory = () =>
+  request('/deposit/history');
+
