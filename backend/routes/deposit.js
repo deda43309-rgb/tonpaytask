@@ -112,20 +112,26 @@ router.post('/cancel/:id', async (req, res) => {
     const depositId = parseInt(req.params.id);
 
     const dep = await db.get(
-      "SELECT * FROM pending_deposits WHERE id = ? AND user_id = ? AND status = 'pending'",
-      depositId, userId
+      "SELECT * FROM pending_deposits WHERE id = ? AND status = 'pending'",
+      depositId
     );
+    
     if (!dep) {
-      return res.status(404).json({ error: '\u0414\u0435\u043f\u043e\u0437\u0438\u0442 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d \u0438\u043b\u0438 \u0443\u0436\u0435 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u0430\u043d' });
+      console.log(`[Cancel] Not found or not pending: id=${depositId}`);
+      return res.status(404).json({ error: 'Депозит не найден или уже обработан' });
+    }
+
+    if (String(dep.user_id) !== String(userId)) {
+      return res.status(403).json({ error: 'Нет доступа' });
     }
 
     await db.run("UPDATE pending_deposits SET status = 'cancelled' WHERE id = ?", depositId);
-    console.log(`\u274c [Deposit] Cancelled: ${dep.memo} (${dep.amount} TON, user ${userId})`);
+    console.log(`❌ [Deposit] Cancelled: ${dep.memo} (${dep.amount} TON, user ${userId})`);
 
-    res.json({ success: true, message: '\u0414\u0435\u043f\u043e\u0437\u0438\u0442 \u043e\u0442\u043c\u0435\u043d\u0451\u043d' });
+    res.json({ success: true, message: 'Депозит отменён' });
   } catch (error) {
     console.error('Cancel deposit error:', error);
-    res.status(500).json({ error: '\u0412\u043d\u0443\u0442\u0440\u0435\u043d\u043d\u044f\u044f \u043e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0440\u0432\u0435\u0440\u0430' });
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 });
 
