@@ -189,10 +189,6 @@ async function initTables() {
     }
   }
 
-  // Add karma column
-  try { await db.exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS karma INTEGER DEFAULT 50'); } catch(e) {}
-  // Ensure karma DEFAULT is 50 (fix for existing columns with wrong default)
-  try { await db.exec('ALTER TABLE users ALTER COLUMN karma SET DEFAULT 50'); } catch(e) {}
   // Add is_blocked column
   try { await db.exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked INTEGER DEFAULT 0'); } catch(e) {}
 
@@ -370,9 +366,6 @@ async function initTables() {
     ['unsub_penalty', '50'],
     ['referral_bonus', '100'],
     ['daily_bonus', '50'],
-    ['karma_bonus_high', '5'],
-    ['karma_penalty_low', '10'],
-    ['karma_penalty_critical', '15'],
   ];
   for (const [key, value] of defaults) {
     try {
