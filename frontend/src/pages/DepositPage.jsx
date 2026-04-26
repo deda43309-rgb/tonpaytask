@@ -19,12 +19,14 @@ export default function DepositPage({ user, onUserUpdate }) {
   const [timeLeft, setTimeLeft] = useState(0);
   const [copied, setCopied] = useState('');
   const [history, setHistory] = useState([]);
+  const [minDeposit, setMinDeposit] = useState(0.1);
 
   // Check for existing pending deposit on mount
   useEffect(() => {
     api.getDepositHistory().then(res => {
       setHistory(res.deposits || []);
       setWallet(res.wallet || '');
+      if (res.min_deposit) setMinDeposit(res.min_deposit);
       const pending = res.deposits?.find(d => d.status === 'pending' && new Date(d.expires_at) > new Date());
       if (pending) {
         setDeposit(pending);
@@ -50,6 +52,7 @@ export default function DepositPage({ user, onUserUpdate }) {
   const handleCreate = async () => {
     const a = parseFloat(amount);
     if (!a || a <= 0) { setError('Введите сумму'); return; }
+    if (a < minDeposit) { setError(`Минимальный депозит: ${minDeposit} TON`); return; }
     setLoading(true);
     setError('');
     try {
@@ -137,7 +140,7 @@ export default function DepositPage({ user, onUserUpdate }) {
           <h3 className="deposit-step-title">Шаг 1: Выберите сумму</h3>
 
           <div className="deposit-amounts">
-            {AMOUNTS.map(a => (
+            {AMOUNTS.filter(a => a >= minDeposit).map(a => (
               <button
                 key={a}
                 className={`deposit-amount-btn ${parseFloat(amount) === a ? 'active' : ''}`}
@@ -154,7 +157,7 @@ export default function DepositPage({ user, onUserUpdate }) {
             inputMode="decimal"
             value={amount}
             onChange={e => setAmount(e.target.value)}
-            placeholder="Или введите сумму в TON"
+            placeholder={`Минимум ${minDeposit} TON`}
           />
 
           {error && <div className="deposit-error">⚠️ {error}</div>}

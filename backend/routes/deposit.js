@@ -19,6 +19,13 @@ router.post('/create', async (req, res) => {
       return res.status(400).json({ error: 'Неверная сумма (0.01 — 100,000 TON)' });
     }
 
+    // Check min deposit
+    const minRow = await db.get("SELECT value FROM settings WHERE key = 'min_deposit'");
+    const minDeposit = parseFloat(minRow?.value) || 0.1;
+    if (amount < minDeposit) {
+      return res.status(400).json({ error: `Минимальный депозит: ${minDeposit} TON` });
+    }
+
     // Check for existing pending deposit
     const existing = await db.get(
       "SELECT * FROM pending_deposits WHERE user_id = ? AND status = 'pending' AND expires_at > NOW()",
@@ -108,7 +115,10 @@ router.get('/history', async (req, res) => {
       userId
     );
 
-    res.json({ deposits, wallet: process.env.PROJECT_WALLET || '' });
+    const minRow = await db.get("SELECT value FROM settings WHERE key = 'min_deposit'");
+    const minDeposit = parseFloat(minRow?.value) || 0.1;
+
+    res.json({ deposits, wallet: process.env.PROJECT_WALLET || '', min_deposit: minDeposit });
   } catch (error) {
     console.error('Deposit history error:', error);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
