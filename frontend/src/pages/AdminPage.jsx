@@ -899,7 +899,7 @@ function WalletEditor() {
 const MODULE_LIST = [
   { key: 'tasks', icon: '\ud83d\udccb', label: '\u0417\u0430\u0434\u0430\u043d\u0438\u044f', desc: '\u0420\u0430\u0437\u0434\u0435\u043b \u0437\u0430\u0434\u0430\u043d\u0438\u0439 \u0434\u043b\u044f \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u0435\u0439', hasSettings: true },
   { key: 'referral', icon: '\ud83d\udc65', label: '\u0420\u0435\u0444\u0435\u0440\u0430\u043b\u044b', desc: '\u0421\u0438\u0441\u0442\u0435\u043c\u0430 \u043f\u0440\u0438\u0433\u043b\u0430\u0448\u0435\u043d\u0438\u044f \u0434\u0440\u0443\u0437\u0435\u0439', hasSettings: true },
-  { key: 'advertiser', icon: '\ud83d\udce2', label: '\u0420\u0435\u043a\u043b\u0430\u043c\u0430', desc: '\u0420\u0435\u043a\u043b\u0430\u043c\u043e\u0434\u0430\u0442\u0435\u043b\u044c\u0441\u0438\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442' },
+  { key: 'advertiser', icon: '\ud83d\udce2', label: '\u0420\u0435\u043a\u043b\u0430\u043c\u0430', desc: '\u0420\u0435\u043a\u043b\u0430\u043c\u043e\u0434\u0430\u0442\u0435\u043b\u044c\u0441\u043a\u0438\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442', hasSettings: true },
   { key: 'deposit', icon: '\ud83d\udc8e', label: '\u0414\u0435\u043f\u043e\u0437\u0438\u0442', desc: '\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430 \u043f\u043e\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u044f \u0431\u0430\u043b\u0430\u043d\u0441\u0430', hasSettings: true },
 ];
 
@@ -1034,6 +1034,34 @@ function ModulesEditor({ showToastMsg }) {
                       {'\ud83d\udd0d \u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c'}
                     </button>
                   </div>
+                </div>
+              )}
+
+              {exp && mod.key === 'advertiser' && (
+                <div style={{ padding: 16, background: 'var(--bg-glass)', border: '1px solid ' + (on ? 'rgba(52,199,89,0.2)' : 'var(--border)'), borderTop: 'none', borderRadius: '0 0 14px 14px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6, color: 'var(--accent-primary)' }}>{'📋 Доступные типы заданий'}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>{'🔗 Синхронизировано с модулем Задания'}</div>
+                  {[
+                    { k: 'module_tasks_subscribe', icon: '🔔', label: 'Подписки на каналы' },
+                    { k: 'module_tasks_bot', icon: '🤖', label: 'Запуск ботов' },
+                    { k: 'module_tasks_link', icon: '🔗', label: 'Посещение ссылок' },
+                  ].map(sub => {
+                    const subOn = mSettings[sub.k] !== '0' && mSettings[sub.k] !== 0;
+                    return (
+                      <div key={sub.k} onClick={() => setMSettings(s => ({...s, [sub.k]: subOn ? '0' : '1'}))}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, marginBottom: 6, cursor: 'pointer', background: subOn ? 'rgba(52,199,89,0.08)' : 'rgba(120,120,128,0.08)', border: '1px solid ' + (subOn ? 'rgba(52,199,89,0.15)' : 'transparent'), transition: 'all 0.2s' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 16 }}>{sub.icon}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600 }}>{sub.label}</span>
+                        </div>
+                        <Sw on={subOn} />
+                      </div>
+                    );
+                  })}
+                  <button className="btn btn-primary btn-block" style={{ marginTop: 6 }} disabled={savingS}
+                    onClick={() => saveSettings(['module_tasks_subscribe','module_tasks_bot','module_tasks_link'], 'Типы заданий сохранены')}>
+                    {savingS ? '⏳...' : '💾 Сохранить типы'}
+                  </button>
                 </div>
               )}
 

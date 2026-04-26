@@ -27,6 +27,7 @@ export default function AdvertiserPage({ user }) {
   const [depositing, setDepositing] = useState(false);
   const [creating, setCreating] = useState(false);
   const [penaltyData, setPenaltyData] = useState(null);
+  const [disabledTypes, setDisabledTypes] = useState([]);
 
   // Resolve state
   const [resolving, setResolving] = useState(false);
@@ -46,12 +47,13 @@ export default function AdvertiserPage({ user }) {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [balRes, tasksRes, statsRes, rewardRes, penRes] = await Promise.all([
+      const [balRes, tasksRes, statsRes, rewardRes, penRes, modRes] = await Promise.all([
         api.getAdBalance(),
         api.getAdTasks(),
         api.getAdStats(),
         api.getRewardPrice(),
         api.getAdvertiserPenalties().catch(() => ({ penalties: [], total_refunded: 0, count: 0 })),
+        api.getModules().catch(() => ({ modules: {} })),
       ]);
       setBalance(balRes.ad_balance);
       setTasks(tasksRes.tasks);
@@ -59,6 +61,10 @@ export default function AdvertiserPage({ user }) {
       setAdPrice(rewardRes.ad_price);
       setUserReward(rewardRes.ad_user_reward);
       setPenaltyData(penRes);
+      // Sync disabled task types from modules
+      const typeMap = { tasks_subscribe: 'subscribe_channel', tasks_bot: 'start_bot', tasks_link: 'visit_link' };
+      const disabled = Object.entries(modRes.modules || {}).filter(([k,v]) => k.startsWith('tasks_') && !v).map(([k]) => typeMap[k]).filter(Boolean);
+      setDisabledTypes(disabled);
     } catch (err) {
       console.error('Load advertiser data error:', err);
     } finally {
@@ -289,7 +295,7 @@ export default function AdvertiserPage({ user }) {
               <div className="adv-form-group">
                 <label className="adv-form-label">Тип задания</label>
                 <select className="input" value={form.type} onChange={e => handleTypeChange(e.target.value)}>
-                  {TASK_TYPES.map(t => (
+                  {TASK_TYPES.filter(t => !disabledTypes.includes(t.value)).map(t => (
                     <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>

@@ -331,6 +331,13 @@ router.post('/tasks', async (req, res) => {
       return res.status(400).json({ error: 'Неверный тип задания' });
     }
 
+    // Check if this task type is disabled
+    const typeSettingMap = { subscribe_channel: 'module_tasks_subscribe', start_bot: 'module_tasks_bot', visit_link: 'module_tasks_link' };
+    const typeSettingRow = await db.get("SELECT value FROM settings WHERE key = ?", typeSettingMap[type]);
+    if (typeSettingRow && typeSettingRow.value === '0') {
+      return res.status(400).json({ error: 'Этот тип заданий отключён администратором' });
+    }
+
     // Validate URL matches task type
     const urlCheck = validateTaskUrl(type, url);
     if (!urlCheck.valid) {
