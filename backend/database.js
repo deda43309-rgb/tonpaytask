@@ -191,6 +191,10 @@ async function initTables() {
 
   // Add is_blocked column
   try { await db.exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked INTEGER DEFAULT 0'); } catch(e) {}
+  // Drop karma column (system removed)
+  try { await db.exec('ALTER TABLE users DROP COLUMN IF EXISTS karma'); } catch(e) {}
+  // Clean karma settings
+  try { await db.run("DELETE FROM settings WHERE key IN ('karma_bonus_high','karma_penalty_low','karma_penalty_critical')"); } catch(e) {}
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
