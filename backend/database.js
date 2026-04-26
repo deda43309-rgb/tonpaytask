@@ -329,7 +329,7 @@ async function initTables() {
       user_id BIGINT NOT NULL REFERENCES users(id),
       amount NUMERIC NOT NULL,
       memo TEXT NOT NULL UNIQUE,
-      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'confirmed', 'expired', 'failed')),
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'confirmed', 'expired', 'failed', 'cancelled')),
       tx_hash TEXT,
       expires_at TIMESTAMP NOT NULL,
       confirmed_at TIMESTAMP,
@@ -358,6 +358,16 @@ async function initTables() {
   for (const idx of indexes) {
     try { await db.exec(idx); } catch(e) {}
   }
+
+  // Migrations
+  try {
+    // Add 'cancelled' to pending_deposits status constraint
+    await db.exec(`
+      ALTER TABLE pending_deposits DROP CONSTRAINT IF EXISTS pending_deposits_status_check;
+      ALTER TABLE pending_deposits ADD CONSTRAINT pending_deposits_status_check 
+        CHECK(status IN ('pending', 'confirmed', 'expired', 'failed', 'cancelled'));
+    `);
+  } catch(e) { console.log('Migration note:', e.message); }
 
   // Default settings
   const defaults = [
