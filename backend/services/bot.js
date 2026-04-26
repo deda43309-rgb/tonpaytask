@@ -148,7 +148,8 @@ function notifyAdmins(text) {
     .filter(Boolean);
   
   for (const adminId of adminIds) {
-    bot.sendMessage(adminId, text, { parse_mode: 'Markdown' }).catch(e => {
+    console.log(`[Notify] Sending to admin ${adminId}`);
+    bot.sendMessage(adminId, text, { parse_mode: 'HTML' }).catch(e => {
       console.error(`Failed to notify admin ${adminId}:`, e.message);
     });
   }

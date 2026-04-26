@@ -412,14 +412,16 @@ router.post('/tasks', async (req, res) => {
 
       // Notify admins about new task for moderation
       const typeLabel = type === 'subscribe_channel' ? '🔔 Подписка' : type === 'start_bot' ? '🤖 Бот' : '🔗 Ссылка';
-      notifyAdmins(
-        `🔍 *Новое задание на модерации*\n\n` +
-        `📌 *${title}*\n` +
-        `${typeLabel} · ${max_completions} вып.\n` +
-        `🔗 ${url}\n` +
-        `💰 Цена: ${totalCost} TON\n\n` +
-        `Откройте панель админа → Модерация`
-      );
+      try {
+        notifyAdmins(
+          `🔍 <b>Новое задание на модерации</b>\n\n` +
+          `📌 <b>${title}</b>\n` +
+          `${typeLabel} · ${max_completions} вып.\n` +
+          `🔗 ${url}\n` +
+          `💰 Цена: ${totalCost} TON\n\n` +
+          `Откройте панель админа → Модерация`
+        );
+      } catch(e) { console.error('Notify error:', e); }
 
       res.json({ success: true, ...result });
     } catch (txError) {
