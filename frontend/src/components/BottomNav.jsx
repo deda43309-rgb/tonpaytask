@@ -5,6 +5,7 @@ import './BottomNav.css';
 const tabs = [
   { path: '/', icon: '🏠', label: 'Главная' },
   { path: '/tasks', icon: '📋', label: 'Задания' },
+  { path: '/advertiser', icon: '📢', label: 'Реклама' },
   { path: '/referral', icon: '👥', label: 'Друзья' },
 ];
 
@@ -20,7 +21,7 @@ export default function BottomNav() {
   };
 
   // Don't show on sub-pages without bottom nav relevance
-  const hiddenPaths = ['/admin', '/advertiser'];
+  const hiddenPaths = ['/admin'];
   if (hiddenPaths.some(p => location.pathname.startsWith(p))) return null;
 
   return (
