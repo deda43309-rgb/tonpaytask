@@ -188,7 +188,7 @@ export default function AdvertiserPage({ user }) {
   return (
     <div className="page advertiser-page">
       {/* Back */}
-      <button className="adv-back-btn" onClick={() => { hapticFeedback('light'); navigate('/profile'); }}>
+      <button className="adv-back-btn" onClick={() => { hapticFeedback('light'); navigate('/'); }}>
         ← Назад
       </button>
 

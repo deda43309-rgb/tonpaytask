@@ -192,7 +192,7 @@ export default function AdminPage({ user }) {
   return (
     <div className="page admin-page">
       <div className="admin-header">
-        <button className="btn btn-secondary btn-sm" onClick={() => navigate('/profile')}>
+        <button className="btn btn-secondary btn-sm" onClick={() => navigate('/')}>
           ← Назад
         </button>
         <h1 className="section-title">⚙️ Админ</h1>

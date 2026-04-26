@@ -6,7 +6,6 @@ const tabs = [
   { path: '/', icon: '🏠', label: 'Главная' },
   { path: '/tasks', icon: '📋', label: 'Задания' },
   { path: '/referral', icon: '👥', label: 'Друзья' },
-  { path: '/profile', icon: '👤', label: 'Профиль' },
 ];
 
 export default function BottomNav() {

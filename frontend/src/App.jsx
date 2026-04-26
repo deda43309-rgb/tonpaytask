@@ -7,7 +7,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 import HomePage from './pages/HomePage';
 import TasksPage from './pages/TasksPage';
 import ReferralPage from './pages/ReferralPage';
-import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
 import AdvertiserPage from './pages/AdvertiserPage';
 import CompletionsPage from './pages/CompletionsPage';
@@ -111,7 +110,6 @@ export default function App() {
           <Route path="/" element={<HomePage user={user} onUserUpdate={handleUserUpdate} />} />
           <Route path="/tasks" element={<TasksPage user={user} onUserUpdate={handleUserUpdate} />} />
           <Route path="/referral" element={<ReferralPage user={user} />} />
-          <Route path="/profile" element={<ProfilePage user={user} />} />
           <Route path="/admin" element={<AdminPage user={user} />} />
           <Route path="/advertiser" element={<AdvertiserPage user={user} />} />
           <Route path="/completions" element={<CompletionsPage />} />

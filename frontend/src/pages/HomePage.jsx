@@ -4,6 +4,7 @@ import { hapticFeedback } from '../utils/telegram';
 import { formatTON } from '../utils/format';
 import * as api from '../utils/api';
 import './HomePage.css';
+import './ProfilePage.css';
 
 export default function HomePage({ user, onUserUpdate }) {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export default function HomePage({ user, onUserUpdate }) {
 
       setTimeout(() => setShowBonus(false), 3000);
     } catch (err) {
-      if (err.message.includes('already claimed')) {
+      if (err.message.includes('already claimed') || err.message.includes('уже получен')) {
         setDailyClaimed(true);
       }
       hapticFeedback('error');
@@ -64,31 +65,25 @@ export default function HomePage({ user, onUserUpdate }) {
   return (
     <div className="page home-page">
       {/* Profile Card */}
-      <div className="card animate-slide" style={{
-        padding: 20, textAlign: 'center',
-        background: 'linear-gradient(135deg, rgba(var(--accent-primary-rgb, 100, 100, 255), 0.06), rgba(var(--accent-primary-rgb, 100, 100, 255), 0.02))',
-      }}>
-        <div style={{
-          width: 64, height: 64, borderRadius: 20, margin: '0 auto 10px',
-          background: `linear-gradient(135deg, ${karmaColor}, ${karmaColor}99)`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 26, fontWeight: 800, color: '#fff',
-          boxShadow: `0 6px 20px ${karmaColor}33`,
-          overflow: 'hidden',
-        }}>
+      <div className="card profile-card animate-slide">
+        <div className="profile-avatar">
           {user?.photo_url ? (
-            <img src={user.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={user.photo_url} alt="" className="profile-avatar-img" />
           ) : (
-            (user?.first_name || 'U')[0].toUpperCase()
+            <span className="profile-avatar-text">
+              {(user?.first_name || 'U')[0].toUpperCase()}
+            </span>
           )}
         </div>
-        <div style={{ fontSize: 18, fontWeight: 800 }}>
+        <h2 className="profile-name">
           {user?.first_name || ''} {user?.last_name || ''}
-        </div>
+        </h2>
         {user?.username && (
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>@{user.username}</div>
+          <p className="profile-username">@{user.username}</p>
         )}
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>С нами с {memberSince}</div>
+        <p className="profile-member-since">
+          С нами с {memberSince}
+        </p>
       </div>
 
       {/* Balance Card */}
@@ -215,37 +210,76 @@ export default function HomePage({ user, onUserUpdate }) {
         </div>
       )}
 
-      {/* Quick Menu */}
-      <div className="mt-16 animate-slide" style={{ animationDelay: '220ms' }}>
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          {[
-            { icon: '📋', label: 'Мои задания', path: '/completions' },
-            { icon: '🎁', label: 'Реферальная программа', path: '/referral' },
-            { icon: '📢', label: 'Рекламодатель', path: '/advertiser' },
-            ...(user?.is_admin ? [{ icon: '⚙️', label: 'Админ-панель', path: '/admin' }] : []),
-          ].map((item, i, arr) => (
-            <button
-              key={item.path}
-              onClick={() => { hapticFeedback('light'); navigate(item.path); }}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-                padding: '14px 16px', border: 'none', background: 'transparent',
-                cursor: 'pointer', textAlign: 'left',
-                borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
-              }}
-            >
-              <span style={{ fontSize: 20 }}>{item.icon}</span>
-              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{item.label}</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: 16 }}>›</span>
-            </button>
-          ))}
+      {/* Menu Items */}
+      <div className="profile-menu mt-16 animate-slide" style={{ animationDelay: '220ms' }}>
+        <div className="card profile-menu-card">
+          <button
+            className="profile-menu-item"
+            onClick={() => { hapticFeedback('light'); navigate('/completions'); }}
+            id="menu-tasks"
+          >
+            <span className="profile-menu-icon">📋</span>
+            <span className="profile-menu-label">Мои задания</span>
+            <span className="profile-menu-arrow">›</span>
+          </button>
+
+          <div className="profile-menu-divider" />
+
+          <button
+            className="profile-menu-item"
+            onClick={() => { hapticFeedback('light'); navigate('/referral'); }}
+            id="menu-referral"
+          >
+            <span className="profile-menu-icon">🎁</span>
+            <span className="profile-menu-label">Реферальная программа</span>
+            <span className="profile-menu-arrow">›</span>
+          </button>
+
+          <div className="profile-menu-divider" />
+
+          <button
+            className="profile-menu-item"
+            onClick={() => { hapticFeedback('light'); navigate('/advertiser'); }}
+            id="menu-advertiser"
+          >
+            <span className="profile-menu-icon">📢</span>
+            <span className="profile-menu-label">Рекламодатель</span>
+            <span className="profile-menu-arrow">›</span>
+          </button>
+
+          <div className="profile-menu-divider" />
+
+          <button
+            className="profile-menu-item"
+            onClick={() => { hapticFeedback('light'); navigate('/karma'); }}
+            id="menu-karma"
+          >
+            <span className="profile-menu-icon">☯️</span>
+            <span className="profile-menu-label">Система кармы</span>
+            <span className="profile-menu-arrow">›</span>
+          </button>
+
+          {user?.is_admin ? (
+            <>
+              <div className="profile-menu-divider" />
+              <button
+                className="profile-menu-item"
+                onClick={() => { hapticFeedback('light'); navigate('/admin'); }}
+                id="menu-admin"
+              >
+                <span className="profile-menu-icon">⚙️</span>
+                <span className="profile-menu-label">Админ-панель</span>
+                <span className="profile-menu-arrow">›</span>
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
 
       {/* Footer */}
-      <div className="mt-24 animate-fade" style={{ textAlign: 'center', paddingBottom: 20 }}>
-        <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>ID: {user?.id || '—'}</p>
-        <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>TonPayTask v1.0</p>
+      <div className="profile-footer mt-24 animate-fade">
+        <p className="profile-id">ID: {user?.id || '—'}</p>
+        <p className="profile-version">TonPayTask v1.0</p>
       </div>
     </div>
   );

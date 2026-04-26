@@ -146,7 +146,7 @@ export default function CompletionsPage() {
   return (
     <div className="page" style={{ paddingBottom: 100 }}>
       <button
-        onClick={() => { hapticFeedback('light'); navigate('/profile'); }}
+        onClick={() => { hapticFeedback('light'); navigate('/'); }}
         style={{
           background: 'none', border: 'none', color: 'var(--accent-primary)',
           fontSize: 14, fontWeight: 600, padding: '8px 0', cursor: 'pointer',
