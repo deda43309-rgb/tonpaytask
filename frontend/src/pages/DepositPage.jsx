@@ -113,6 +113,7 @@ export default function DepositPage({ user, onUserUpdate }) {
       case 'pending': return { text: '⏳ Ожидание', color: '#ff9500' };
       case 'confirmed': return { text: '✅ Подтверждён', color: '#34c759' };
       case 'expired': return { text: '⏰ Истёк', color: '#ff3b30' };
+      case 'cancelled': return { text: '✕ Отменён', color: '#8e8e93' };
       default: return { text: s, color: 'var(--text-muted)' };
     }
   };
@@ -224,6 +225,26 @@ export default function DepositPage({ user, onUserUpdate }) {
             💡 Перевод также проверяется автоматически каждые 5 мин.
             <br />Мемо должен быть указан <b>точно</b> как показано выше.
           </div>
+
+          <button
+            className="btn"
+            style={{ width: '100%', marginTop: 12, background: 'rgba(255,59,48,0.1)', color: '#ff3b30', border: '1px solid rgba(255,59,48,0.2)' }}
+            onClick={async () => {
+              try {
+                await api.cancelMainDeposit(deposit.id);
+                setDeposit(null);
+                setStep('amount');
+                setAmount('');
+                setError('');
+                hapticFeedback('success');
+              } catch (err) {
+                setError(err.message);
+                hapticFeedback('error');
+              }
+            }}
+          >
+            ✕ Отменить депозит
+          </button>
         </div>
       )}
 
