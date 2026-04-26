@@ -4,7 +4,6 @@ import { hapticFeedback } from '../utils/telegram';
 import { formatTON } from '../utils/format';
 import * as api from '../utils/api';
 import './HomePage.css';
-import './ProfilePage.css';
 
 export default function HomePage({ user, onUserUpdate }) {
   const navigate = useNavigate();
